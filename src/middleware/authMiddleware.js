@@ -1,5 +1,5 @@
-import { ApiError } from "../helpers/ApiError";
-import { VerifyAuthToken } from "../utils/tokenUtils";
+import { ApiError } from "../helpers/ApiError.js";
+import { VerifyAuthToken } from "../utils/tokenUtils.js";
 
 export const Authenticated = (req, res, next) => {
   const authToken = req.headers.authorization;

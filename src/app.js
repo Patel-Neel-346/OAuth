@@ -20,6 +20,17 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
+// app.use(session({
+//   secret: ConfigENV.SESSION_SECRET,
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: {
+//     secure: process.env.NODE_ENV === "production",
+//     httpOnly: true,
+//     maxAge: 24 * 60 * 60 * 1000 // 24 hours
+//   }
+// }));
+
 app.use("/api/v1/user", AuthRouter);
 
 app.listen(PORT, () => {
