@@ -153,6 +153,30 @@ export const RefreshToken = asyncHandler(async (req, res, next) => {
 export const Logout = asyncHandler(async (req, res, next) => {});
 export const GetUserProfile = asyncHandler(async (req, res, next) => {});
 
-export const GoogleCallback = asyncHandler(async (req, res, next) => {});
+export const GoogleCallback = asyncHandler(async (req, res, next) => {
+  const user = req.user;
+
+  // Generate tokens
+  const authToken = generateAuthToken(user);
+  const refreshToken = generateRefreshToken(user);
+
+  // Save refresh token to user
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  // Set cookies
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+
+  res.cookie("authToken", authToken, {
+    httpOnly: true,
+    maxAge: 60 * 60 * 1000, // 1 hour
+  });
+
+  // Redirect to frontend or send response
+  res.redirect(`/auth/success?token=${authToken}`);
+});
 export const FacebookCallback = asyncHandler(async (req, res, next) => {});
 export const AuthSuccess = asyncHandler(async (req, res, next) => {});

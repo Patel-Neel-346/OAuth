@@ -3,6 +3,7 @@ import connectDb from "./config/DbConnect.js";
 import { ConfigENV } from "./config/index.js";
 import cookieParser from "cookie-parser";
 import AuthRouter from "./routes/authRoutes.js";
+import passport, { session } from "passport";
 
 const PORT = ConfigENV.PORT;
 
@@ -20,16 +21,22 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
-// app.use(session({
-//   secret: ConfigENV.SESSION_SECRET,
-//   resave: false,
-//   saveUninitialized: false,
-//   cookie: {
-//     secure: process.env.NODE_ENV === "production",
-//     httpOnly: true,
-//     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-//   }
-// }));
+app.use(
+  session({
+    secret: ConfigENV.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+app.use("/auth", AuthRouter);
 
 app.use("/api/v1/user", AuthRouter);
 
