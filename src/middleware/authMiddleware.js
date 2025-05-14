@@ -1,21 +1,27 @@
 import passport from "passport";
 import { ApiError } from "../helpers/ApiError.js";
 import { VerifyAuthToken } from "../utils/tokenUtils.js";
+import User from "../models/User.js"; // Add this import
 
 export const Authenticated = (req, res, next) => {
-  const authToken = req.headers.authorization;
+  const authToken =
+    req.cookies.authToken ||
+    (req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+      ? req.headers.authorization.split(" ")[1]
+      : null);
 
-  if (!authToken || !authToken.startsWith("Bearer ")) {
-    return next(new ApiError(401, "No Token ,Authorization Denied :("));
+  if (!authToken) {
+    return next(new ApiError(401, "No Token, Authorization Denied :("));
   }
-  const token = authToken.split(" ")[1];
 
-  const decoded = VerifyAuthToken(token);
+  const decoded = VerifyAuthToken(authToken);
 
   if (!decoded) {
     return next(new ApiError(401, "Token is not valid! -_-"));
   }
 
+  // Attach the full user ID to the request
   req.user = decoded.id;
   next();
 };

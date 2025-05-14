@@ -3,7 +3,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as FacebookStrategy } from "passport-facebook";
-import User from "../models/User";
+import User from "../models/User.js"; // Fixed: Add .js extension
 import { ConfigENV } from "./index.js";
 
 //local strategy
@@ -24,7 +24,7 @@ passport.use(
         const IsMatch = await user.comparePassword(password);
 
         if (!IsMatch) {
-          return done(null, false, { message: "Incorrect Message :-:" });
+          return done(null, false, { message: "Incorrect Password :-:" });
         }
 
         return done(null, user);
@@ -41,7 +41,6 @@ const jwtOptions = {
 };
 
 //jwt strategy
-
 passport.use(
   new JwtStrategy(jwtOptions, async (payload, done) => {
     try {
@@ -99,6 +98,56 @@ passport.use(
     }
   )
 );
+
+// Facebook Strategy
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: ConfigENV.FACEBOOK_CLIENT_ID,
+      clientSecret: ConfigENV.FACEBOOK_CLIENT_SECRET,
+      callbackURL: ConfigENV.FACEBOOK_CALLBACK,
+      profileFields: ["id", "displayName", "photos", "email"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // Check if user already exists with Facebook ID
+        let user = await User.findOne({ facebookId: profile.id });
+
+        if (user) {
+          return done(null, user);
+        }
+
+        // Check if we have an email from Facebook
+        const email =
+          profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+
+        if (email) {
+          // Check if user exists with the same email
+          user = await User.findOne({ email });
+
+          if (user) {
+            // Update existing user with Facebook ID
+            user.facebookId = profile.id;
+            await user.save();
+            return done(null, user);
+          }
+        }
+
+        // Create new user
+        user = await User.create({
+          name: profile.displayName,
+          email: email || `fb_${profile.id}@placeholder.com`, // Use email or create placeholder
+          facebookId: profile.id,
+        });
+
+        return done(null, user);
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
+
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
