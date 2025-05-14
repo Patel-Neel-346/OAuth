@@ -1,3 +1,4 @@
+// Import all necessary modules
 import express from "express";
 import {
   AuthSuccess,
@@ -15,6 +16,7 @@ import {
   facebookAuthCallback,
   googleAuth,
   googleAuthCallback,
+  localAuth,
 } from "../middleware/authMiddleware.js";
 
 const AuthRouter = express.Router();
