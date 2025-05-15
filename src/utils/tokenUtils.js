@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import { ConfigENV } from "../config/index.js";
 
-//generate AuthToken
 export const generateRefreshToken = (user) => {
   return jwt.sign(
     {
@@ -27,8 +26,6 @@ export const generateAuthToken = (user) => {
     }
   );
 };
-
-//verify Tokens
 
 export const VerifyRefreshToken = (token) => {
   try {

@@ -8,7 +8,6 @@ import {
   VerifyRefreshToken,
 } from "../utils/tokenUtils.js";
 
-// Register a new user
 export const SignUp = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
 
@@ -68,7 +67,6 @@ export const SignUp = asyncHandler(async (req, res, next) => {
   );
 });
 
-// Login user
 export const Login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 

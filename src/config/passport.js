@@ -3,7 +3,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as FacebookStrategy } from "passport-facebook";
-import User from "../models/User.js"; // Fixed: Add .js extension
+import User from "../models/User.js";
 import { ConfigENV } from "./index.js";
 
 //local strategy
@@ -67,6 +67,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log(profile);
         // Check if user already exists
         let user = await User.findOne({ googleId: profile.id });
 
@@ -110,6 +111,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log(profile);
         // Check if user already exists with Facebook ID
         let user = await User.findOne({ facebookId: profile.id });
 

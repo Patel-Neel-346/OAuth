@@ -8,7 +8,7 @@ export class ApiError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.errors = errors;
-    this.success = false; // Fixed typo: succes -> success
+    this.success = false;
     this.message = message;
     this.data = null;
 
