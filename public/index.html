@@ -3,136 +3,415 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OAuth with Swagger</title>
+    <title>OAuth Authentication Testing</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         line-height: 1.6;
         margin: 0;
-        padding: 20px;
-        background-color: #f4f4f4;
+        padding: 0;
+        background-color: #f8f9fa;
+        color: #333;
       }
       .container {
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
-        background: white;
         padding: 20px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
-      h1 {
-        color: #333;
+      .header {
+        background-color: #4285f4;
+        color: white;
+        padding: 20px 0;
+        text-align: center;
+        border-radius: 5px 5px 0 0;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+        overflow: hidden;
+      }
+      .card-header {
+        background: #f1f3f5;
+        padding: 15px 20px;
         border-bottom: 1px solid #ddd;
-        padding-bottom: 10px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .card-body {
+        padding: 20px;
       }
       .btn {
         display: inline-block;
         background: #4285f4;
         color: white;
-        padding: 10px 15px;
+        padding: 10px 18px;
         text-decoration: none;
-        border-radius: 5px;
-        margin: 10px 5px;
+        border-radius: 30px;
+        margin: 5px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        background: #3367d6;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
       .btn-google {
         background: #db4437;
       }
+      .btn-google:hover {
+        background: #c53929;
+      }
       .btn-facebook {
         background: #3b5998;
       }
+      .btn-facebook:hover {
+        background: #2d4373;
+      }
       .btn-swagger {
         background: #85ea2d;
-        color: black;
+        color: #173647;
+      }
+      .btn-swagger:hover {
+        background: #78d327;
+      }
+      .btn-register {
+        background: #673ab7;
+      }
+      .btn-register:hover {
+        background: #563098;
+      }
+      .btn-login {
+        background: #009688;
+      }
+      .btn-login:hover {
+        background: #00796b;
+      }
+      .auth-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
       }
       code {
         background: #f4f4f4;
-        padding: 5px;
-        border-radius: 3px;
-        font-size: 90%;
+        padding: 4px 6px;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #e53935;
       }
       pre {
-        background: #f4f4f4;
-        padding: 10px;
+        background: #f8f9fa;
+        padding: 15px;
         border-radius: 5px;
         overflow-x: auto;
+        border: 1px solid #ddd;
+        font-size: 14px;
       }
-      .section {
-        margin-bottom: 30px;
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+      .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+      .tab-container {
+        margin-top: 20px;
+      }
+      .tab-buttons {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+      }
+      .tab-button {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-weight: 500;
+        color: #777;
+      }
+      .tab-button.active {
+        border-bottom: 3px solid #4285f4;
+        color: #4285f4;
+      }
+      .tab-content {
+        display: none;
+        padding: 20px 0;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      #auth-result {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+      }
+      .user-info {
+        background: #e8f5e9;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #4caf50;
+      }
+      .error-info {
+        background: #ffebee;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #f44336;
+      }
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .status-pill.authenticated {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .status-pill.unauthenticated {
+        background: #ffebee;
+        color: #c62828;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+      }
+      .status-dot.authenticated {
+        background: #4caf50;
+      }
+      .status-dot.unauthenticated {
+        background: #f44336;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>OAuth API Testing Page</h1>
-
-      <div class="section">
-        <h2>OAuth Options</h2>
-        <a href="http://127.0.0.1:7000/auth/google" class="btn btn-google"
-          >Login with Google</a
-        >
-        <a href="/auth/facebook" class="btn btn-facebook"
-          >Login with Facebook</a
-        >
-        <a href="/api-docs" class="btn btn-swagger" target="_blank"
-          >Open Swagger Documentation</a
-        >
+      <div class="header">
+        <h1>OAuth Authentication Testing Dashboard</h1>
       </div>
 
-      <div class="section">
-        <h2>How It Works</h2>
-        <ol>
-          <li>
-            Click one of the OAuth buttons above to begin the authentication
-            flow
-          </li>
-          <li>
-            After successful authentication, you'll be redirected back with an
-            authorization token
-          </li>
-          <li>
-            The token will be stored in cookies for future authenticated
-            requests
-          </li>
-          <li>
-            You can use the Swagger documentation to explore all available API
-            endpoints
-          </li>
-        </ol>
+      <div class="card">
+        <div class="card-header">
+          Authentication Status
+          <div id="status-indicator" class="status-pill unauthenticated">
+            <span class="status-dot unauthenticated"></span>
+            Not Authenticated
+          </div>
+        </div>
+        <div class="card-body">
+          <p>
+            Welcome to the OAuth testing dashboard. Use this interface to test
+            different authentication methods and API endpoints.
+          </p>
+          <button id="check-auth" class="btn">
+            Check Authentication Status
+          </button>
+          <button id="logout-btn" class="btn" style="display: none">
+            Logout
+          </button>
+          <div id="auth-result"></div>
+        </div>
       </div>
 
-      <div class="section">
-        <h2>Test Your Authentication</h2>
-        <button id="check-auth" class="btn">Check Authentication Status</button>
-        <div id="auth-result" style="margin-top: 10px"></div>
+      <div class="card">
+        <div class="card-header">Authentication Methods</div>
+        <div class="card-body">
+          <div class="tab-container">
+            <div class="tab-buttons">
+              <button class="tab-button active" data-tab="oauth">
+                OAuth Login
+              </button>
+              <button class="tab-button" data-tab="credentials">
+                Credentials Login
+              </button>
+              <button class="tab-button" data-tab="register">Register</button>
+            </div>
+
+            <div id="oauth" class="tab-content active">
+              <p>Log in using your social media accounts:</p>
+              <div class="auth-actions">
+                <a
+                  href="http://localhost:7000/auth/google"
+                  class="btn btn-google"
+                  >Login with Google</a
+                >
+                <a
+                  href="http://localhost:7000/auth/facebook"
+                  class="btn btn-facebook"
+                  >Login with Facebook</a
+                >
+              </div>
+            </div>
+
+            <div id="credentials" class="tab-content">
+              <p>Log in with your email and password:</p>
+              <form id="login-form">
+                <div class="form-group">
+                  <label for="login-email">Email</label>
+                  <input
+                    type="email"
+                    id="login-email"
+                    class="form-control"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="login-password">Password</label>
+                  <input
+                    type="password"
+                    id="login-password"
+                    class="form-control"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-login">Login</button>
+                <div id="login-result"></div>
+              </form>
+            </div>
+
+            <div id="register" class="tab-content">
+              <p>Create a new account:</p>
+              <form id="register-form">
+                <div class="form-group">
+                  <label for="register-name">Full Name</label>
+                  <input
+                    type="text"
+                    id="register-name"
+                    class="form-control"
+                    placeholder="Enter your name"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="register-email">Email</label>
+                  <input
+                    type="email"
+                    id="register-email"
+                    class="form-control"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="register-password">Password</label>
+                  <input
+                    type="password"
+                    id="register-password"
+                    class="form-control"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-register">Register</button>
+                <div id="register-result"></div>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="section">
-        <h2>Manual API Testing</h2>
-        <p>You can also use the following curl commands to test the API:</p>
-        <pre>
-# Register a new user
-curl -X POST http://localhost:3000/auth/register \\
-  -H "Content-Type: application/json" \\
-  -d '{"name":"Test User","email":"test@example.com","password":"password123"}'
-
-# Login with credentials
-curl -X POST http://localhost:3000/auth/login \\
-  -H "Content-Type: application/json" \\
-  -d '{"email":"test@example.com","password":"password123"}'
-            </pre
-        >
+      <div class="card">
+        <div class="card-header">API Documentation</div>
+        <div class="card-body">
+          <p>Explore available endpoints and test API functionality:</p>
+          <a
+            href="http://localhost:7000/api-docs"
+            class="btn btn-swagger"
+            target="_blank"
+          >
+            Open Swagger Documentation
+          </a>
+        </div>
       </div>
     </div>
 
     <script>
+      // Tab functionality
+      document.querySelectorAll(".tab-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          // Remove active class from all buttons and content
+          document
+            .querySelectorAll(".tab-button")
+            .forEach((b) => b.classList.remove("active"));
+          document
+            .querySelectorAll(".tab-content")
+            .forEach((c) => c.classList.remove("active"));
+
+          // Add active class to clicked button and corresponding content
+          button.classList.add("active");
+          document.getElementById(button.dataset.tab).classList.add("active");
+        });
+      });
+
+      // Update authentication status UI
+      function updateAuthStatus(isAuthenticated) {
+        const statusIndicator = document.getElementById("status-indicator");
+        const logoutBtn = document.getElementById("logout-btn");
+
+        if (isAuthenticated) {
+          statusIndicator.className = "status-pill authenticated";
+          statusIndicator.innerHTML =
+            '<span class="status-dot authenticated"></span>Authenticated';
+          logoutBtn.style.display = "inline-block";
+        } else {
+          statusIndicator.className = "status-pill unauthenticated";
+          statusIndicator.innerHTML =
+            '<span class="status-dot unauthenticated"></span>Not Authenticated';
+          logoutBtn.style.display = "none";
+        }
+      }
+
+      // Check authentication status
       document
         .getElementById("check-auth")
         .addEventListener("click", async () => {
           const resultElement = document.getElementById("auth-result");
-          resultElement.innerHTML = "Checking authentication...";
+          resultElement.innerHTML =
+            '<div style="text-align: center;"><div class="loading"></div> Checking authentication...</div>';
 
           try {
-            const response = await fetch("http:localhost:7000/auth/profile", {
+            const response = await fetch("http://localhost:7000/auth/profile", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -144,29 +423,180 @@ curl -X POST http://localhost:3000/auth/login \\
 
             if (response.ok) {
               resultElement.innerHTML = `
-                        <div style="color: green;">
-                            <p><strong>Authenticated!</strong></p>
-                            <p>User: ${data.data.user.name}</p>
-                            <p>Email: ${data.data.user.email}</p>
-                        </div>
-                    `;
+              <div class="user-info">
+                <h3>Authenticated User</h3>
+                <p><strong>Name:</strong> ${data.data.user.name}</p>
+                <p><strong>Email:</strong> ${data.data.user.email}</p>
+                <p><strong>User ID:</strong> ${data.data.user._id}</p>
+              </div>
+            `;
+              updateAuthStatus(true);
             } else {
               resultElement.innerHTML = `
-                        <div style="color: red;">
-                            <p><strong>Not authenticated</strong></p>
-                            <p>Error: ${data.message}</p>
-                        </div>
-                    `;
+              <div class="error-info">
+                <p><strong>Not authenticated</strong></p>
+                <p>Error: ${data.message}</p>
+              </div>
+            `;
+              updateAuthStatus(false);
             }
           } catch (error) {
             resultElement.innerHTML = `
-                    <div style="color: red;">
-                        <p><strong>Error checking authentication</strong></p>
-                        <p>${error.message}</p>
-                    </div>
-                `;
+            <div class="error-info">
+              <p><strong>Error checking authentication</strong></p>
+              <p>${error.message}</p>
+              <p>Make sure your server is running on port 7000</p>
+            </div>
+          `;
+            updateAuthStatus(false);
           }
         });
+
+      // Login form submission
+      document
+        .getElementById("login-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("login-email").value;
+          const password = document.getElementById("login-password").value;
+          const resultElement = document.getElementById("login-result");
+
+          resultElement.innerHTML =
+            '<div style="text-align: center;"><div class="loading"></div> Logging in...</div>';
+
+          try {
+            const response = await fetch("http://localhost:7000/auth/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email, password }),
+              credentials: "include",
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              resultElement.innerHTML = `<div class="user-info">Login successful!</div>`;
+              // Refresh auth status
+              document.getElementById("check-auth").click();
+
+              // Reset form
+              document.getElementById("login-form").reset();
+            } else {
+              resultElement.innerHTML = `<div class="error-info">Error: ${data.message}</div>`;
+            }
+          } catch (error) {
+            resultElement.innerHTML = `<div class="error-info">Error: ${error.message}</div>`;
+          }
+        });
+
+      // Register form submission
+      document
+        .getElementById("register-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("register-name").value;
+          const email = document.getElementById("register-email").value;
+          const password = document.getElementById("register-password").value;
+          const resultElement = document.getElementById("register-result");
+
+          resultElement.innerHTML =
+            '<div style="text-align: center;"><div class="loading"></div> Registering...</div>';
+
+          try {
+            const response = await fetch(
+              "http://localhost:7000/auth/register",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name, email, password }),
+                credentials: "include",
+              }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+              resultElement.innerHTML = `<div class="user-info">Registration successful! You are now logged in.</div>`;
+              // Refresh auth status
+              document.getElementById("check-auth").click();
+
+              // Reset form
+              document.getElementById("register-form").reset();
+            } else {
+              resultElement.innerHTML = `<div class="error-info">Error: ${data.message}</div>`;
+            }
+          } catch (error) {
+            resultElement.innerHTML = `<div class="error-info">Error: ${error.message}</div>`;
+          }
+        });
+
+      // Logout functionality
+      document
+        .getElementById("logout-btn")
+        .addEventListener("click", async () => {
+          try {
+            const response = await fetch("http://localhost:7000/auth/logout", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            });
+
+            if (response.ok) {
+              document.getElementById("auth-result").innerHTML = `
+              <div class="user-info">
+                <p>Successfully logged out!</p>
+              </div>
+            `;
+              updateAuthStatus(false);
+            } else {
+              const data = await response.json();
+              document.getElementById("auth-result").innerHTML = `
+              <div class="error-info">
+                <p>Logout failed: ${data.message}</p>
+              </div>
+            `;
+            }
+          } catch (error) {
+            document.getElementById("auth-result").innerHTML = `
+            <div class="error-info">
+              <p>Error during logout: ${error.message}</p>
+            </div>
+          `;
+          }
+        });
+
+      // Check authentication status on page load
+      document.addEventListener("DOMContentLoaded", () => {
+        // Check if we were redirected from OAuth
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
+
+        if (token) {
+          // If we have a token in URL, we just authenticated via OAuth
+          document.getElementById("auth-result").innerHTML = `
+            <div class="user-info">
+              <p>Successfully authenticated via OAuth!</p>
+            </div>
+          `;
+          updateAuthStatus(true);
+
+          // Clean URL without reloading the page
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        }
+
+        // Check auth status anyway
+        document.getElementById("check-auth").click();
+      });
     </script>
   </body>
 </html>

@@ -4,41 +4,55 @@ import { ConfigENV } from "./config/index.js";
 import cookieParser from "cookie-parser";
 import AuthRouter from "./routes/authRoutes.js";
 import passport from "passport";
-import session from "express-session"; // Import session from express-session instead
-import "./config/passport.js"; // Import passport configuration
-import swaggerDocs from "./config/swagger.js"; // Import swagger config
+import session from "express-session";
+import cors from "cors"; // Add CORS package (you'll need to install this)
+import "./config/passport.js";
+import swaggerDocs from "./config/swagger.js";
 
-const PORT = ConfigENV.PORT;
-
+const PORT = ConfigENV.PORT || 7000;
 const app = express();
 
+// Connect to database
 connectDb();
-app.get("/", (req, res) => {
-  res.send("Hello World! :)");
-});
 
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
+// Enable CORS with credentials support
+app.use(
+  cors({
+    origin: ["http://localhost:5500", "http://127.0.0.1:5500"], // Allow both versions of localhost
+    credentials: true, // Allow cookies to be sent with requests
+  })
+);
+
+// Parse JSON and URL-encoded bodies
 app.use(express.static("public"));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
+// Session configuration
 app.use(
   session({
-    secret: ConfigENV.SESSION_SECRET,
+    secret: ConfigENV.SESSION_SECRET || "default_secret_key_for_development",
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   })
 );
 
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Routes
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "./public" });
+});
+
 app.use("/auth", AuthRouter);
 app.use("/api/v1/user", AuthRouter);
 
@@ -58,7 +72,8 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server is Running on http://localhost:${PORT}`);
-  swaggerDocs(app); // Initialize Swagger docs
+  swaggerDocs(app);
 });
