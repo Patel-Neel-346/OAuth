@@ -69,11 +69,13 @@ const swaggerOptions = {
               type: "string",
               format: "email",
               description: "User email address",
+              example: "user@example.com",
             },
             password: {
               type: "string",
               format: "password",
               description: "User password",
+              example: "Password123",
             },
           },
         },
@@ -84,16 +86,48 @@ const swaggerOptions = {
             name: {
               type: "string",
               description: "User full name",
+              example: "John Doe",
+              minLength: 2,
+              maxLength: 50,
             },
             email: {
               type: "string",
               format: "email",
               description: "User email address",
+              example: "john.doe@example.com",
             },
             password: {
               type: "string",
               format: "password",
-              description: "User password",
+              description:
+                "User password (min 6 characters, must include at least one letter and one number)",
+              example: "SecurePass123",
+            },
+          },
+        },
+        ValidationError: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              example: false,
+            },
+            message: {
+              type: "string",
+              example: "Validation Error",
+            },
+            errors: {
+              type: "object",
+              properties: {
+                email: {
+                  type: "string",
+                  example: "Please provide a valid email address",
+                },
+                password: {
+                  type: "string",
+                  example: "Password must be at least 6 characters long",
+                },
+              },
             },
           },
         },

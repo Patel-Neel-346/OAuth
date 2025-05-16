@@ -50,6 +50,7 @@ app.get("/", (req, res) => {
 app.use("/auth", AuthRouter);
 app.use("/api/v1/user", AuthRouter);
 
+// Enhanced error handler to better display validation errors
 app.use((err, req, res, next) => {
   console.error(err.stack);
 
@@ -57,10 +58,18 @@ app.use((err, req, res, next) => {
   const message = err.message || "Internal Server Error";
   const errors = err.errors || [];
 
+  // Format validation errors for better frontend display
+  const formattedErrors = {};
+  if (errors && errors.length > 0) {
+    errors.forEach((error) => {
+      formattedErrors[error.path] = error.msg;
+    });
+  }
+
   res.status(statusCode).json({
     success: false,
     message,
-    errors,
+    errors: Object.keys(formattedErrors).length > 0 ? formattedErrors : errors,
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 });
