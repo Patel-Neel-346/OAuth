@@ -31,11 +31,6 @@ const DataSchema = new mongoose.Schema({
 // Create the model if it doesn't exist
 const Data = mongoose.models.Data || mongoose.model("Data", DataSchema);
 
-/**
- * Validates a CSV row against expected schema
- * @param {Object} row - The CSV row data
- * @returns {Object} An object with isValid flag and errors array
- */
 const validateRow = (row) => {
   const errors = [];
   const requiredFields = [
@@ -67,11 +62,6 @@ const validateRow = (row) => {
   };
 };
 
-/**
- * Process CSV file and import valid records into the database
- * @param {string} filePath - Path to the CSV file
- * @returns {Promise<Object>} Import statistics
- */
 export const processCSVFile = async (filePath) => {
   return new Promise((resolve, reject) => {
     const stats = {
@@ -84,7 +74,6 @@ export const processCSVFile = async (filePath) => {
       errors: [],
     };
 
-    // Check if file exists
     if (!fs.existsSync(filePath)) {
       return reject(new ApiError(404, "File not found"));
     }
@@ -150,10 +139,6 @@ export const processCSVFile = async (filePath) => {
   });
 };
 
-/**
- * Get summary of imported data
- * @returns {Promise<Object>} Summary statistics
- */
 export const getDataSummary = async () => {
   const total = await Data.countDocuments();
   const avgBalance = await Data.aggregate([
