@@ -8,6 +8,12 @@ import session from "express-session";
 import cors from "cors";
 import "./config/passport.js";
 import swaggerDocs from "./config/swagger.js";
+import DataRouter from "./routes/dataRoutes.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = ConfigENV.PORT || 7000;
 const app = express();
@@ -40,6 +46,10 @@ app.use(
   })
 );
 
+app.get("/csv-import", (req, res) => {
+  res.sendFile("csv-upload.html", { root: "./public" });
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -49,7 +59,7 @@ app.get("/", (req, res) => {
 
 app.use("/auth", AuthRouter);
 app.use("/api/v1/user", AuthRouter);
-
+app.use("/data", DataRouter);
 // Enhanced error handler to better display validation errors
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -75,6 +85,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
+  console.log(`Server is Running on http://localhost:${PORT}`);
   console.log(`Server is Running on http://localhost:${PORT}`);
   swaggerDocs(app);
 });
