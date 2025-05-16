@@ -16,6 +16,10 @@ import {
   googleAuth,
   googleAuthCallback,
 } from "../middleware/authMiddleware.js";
+import {
+  loginValidationRules,
+  registerValidationRules,
+} from "../middleware/authValidator.js";
 
 const AuthRouter = express.Router();
 
@@ -43,7 +47,7 @@ const AuthRouter = express.Router();
  *       500:
  *         description: Server error
  */
-AuthRouter.post("/register", SignUp);
+AuthRouter.post("/register", registerValidationRules, SignUp);
 
 /**
  * @swagger
@@ -69,7 +73,7 @@ AuthRouter.post("/register", SignUp);
  *       500:
  *         description: Server error
  */
-AuthRouter.post("/login", Login);
+AuthRouter.post("/login", loginValidationRules, Login);
 
 /**
  * @swagger
