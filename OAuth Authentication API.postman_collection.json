@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "91a97a94-76a3-4995-a062-db8b77dc4a97",
-		"name": "OAuth Authentication API",
-		"description": "Collection for testing OAuth authentication and user management endpoints",
+		"name": "OAuth & Data Import API Collection",
+		"description": "Collection for testing OAuth authentication, user management, and data import endpoints",
 		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
 		"_exporter_id": "37897270"
 	},
@@ -147,6 +147,65 @@
 				}
 			],
 			"description": "OAuth related endpoints"
+		},
+		{
+			"name": "Data Import",
+			"item": [
+				{
+					"name": "Upload CSV File",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/your/file.csv",
+									"description": "CSV file to upload (10MB limit)"
+								}
+							]
+						},
+						"url": "{{base_url}}/data/upload",
+						"description": "Upload and process a CSV file. Only authenticated users can upload files."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Data Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": "{{base_url}}/data/stats",
+						"description": "Get statistics about the uploaded and processed CSV data."
+					},
+					"response": []
+				},
+				{
+					"name": "CSV Upload Interface",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/csv-import",
+						"description": "Access the CSV upload web interface"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for CSV data import and processing"
 		},
 		{
 			"name": "Documentation",
