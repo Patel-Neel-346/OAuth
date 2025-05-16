@@ -112,6 +112,7 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         console.log(profile);
+        console.log(accessToken, refreshToken);
         // Check if user already exists with Facebook ID
         let user = await User.findOne({ facebookId: profile.id });
 
