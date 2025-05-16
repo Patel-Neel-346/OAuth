@@ -56,9 +56,6 @@ app.use(passport.session());
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "./public" });
 });
-app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "./public" });
-});
 
 app.use("/auth", AuthRouter);
 app.use("/api/v1/user", AuthRouter);
