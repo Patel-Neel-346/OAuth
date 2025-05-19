@@ -77,6 +77,10 @@ export const FilterDataOfClient = asyncHandler(async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
 
+    //2 50
+    //(2-1)*50= 50 // means  first 50 skip then start from 50 to limit 50 means 50 to 100
+    //(1-1)*50=0 start 0 to 50
+
     // Build filter object from request body
     const filterCriteria = {};
 
