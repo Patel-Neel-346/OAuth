@@ -9,6 +9,7 @@ import cors from "cors";
 import "./config/passport.js";
 import swaggerDocs from "./config/swagger.js";
 import DataRouter from "./routes/dataRoutes.js";
+import ClientRouter from "./routes/clientRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -57,11 +58,11 @@ app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "./public" });
 });
 
-app.get("/Hello")
-
 app.use("/auth", AuthRouter);
 app.use("/api/v1/user", AuthRouter);
 app.use("/data", DataRouter);
+app.use("/clients", ClientRouter);
+
 // Enhanced error handler to better display validation errors
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -87,7 +88,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is Running on http://localhost:${PORT}`);
   console.log(`Server is Running on http://localhost:${PORT}`);
   swaggerDocs(app);
 });
