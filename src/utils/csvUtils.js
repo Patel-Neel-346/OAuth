@@ -1,36 +1,13 @@
 import fs from "fs";
 import Papa from "papaparse";
-import mongoose from "mongoose";
 import { ApiError } from "../helpers/ApiError.js";
+import Data from "../models/Data.js";
 
-// Define CSV data model schema
-const DataSchema = new mongoose.Schema({
-  age: Number,
-  job: String,
-  marital: String,
-  education: String,
-  default: String,
-  balance: Number,
-  housing: String,
-  loan: String,
-  contact: String,
-  day: Number,
-  month: String,
-  duration: Number,
-  campaign: Number,
-  pdays: Number,
-  previous: Number,
-  poutcome: String,
-  Target: String,
-  importedAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-// Create the model if it doesn't exist
-const Data = mongoose.models.Data || mongoose.model("Data", DataSchema);
-
+/**
+ * Validates if a CSV row has the required fields and data types
+ * @param {Object} row - The CSV row to validate
+ * @returns {Object} - Validation result with isValid flag and errors array
+ */
 const validateRow = (row) => {
   const errors = [];
   const requiredFields = [
@@ -62,6 +39,11 @@ const validateRow = (row) => {
   };
 };
 
+/**
+ * Process a CSV file and import valid data into the database
+ * @param {string} filePath - Path to the CSV file
+ * @returns {Promise<Object>} - Statistics about the import process
+ */
 export const processCSVFile = async (filePath) => {
   return new Promise((resolve, reject) => {
     const stats = {
@@ -139,6 +121,10 @@ export const processCSVFile = async (filePath) => {
   });
 };
 
+/**
+ * Get summary statistics about the imported data
+ * @returns {Promise<Object>} - Summary statistics
+ */
 export const getDataSummary = async () => {
   const total = await Data.countDocuments();
   const avgBalance = await Data.aggregate([
@@ -155,10 +141,4 @@ export const getDataSummary = async () => {
     avgBalance: avgBalance.length > 0 ? avgBalance[0].average : 0,
     jobDistribution,
   };
-};
-
-export default {
-  Data,
-  processCSVFile,
-  getDataSummary,
 };
