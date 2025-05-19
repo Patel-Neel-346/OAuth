@@ -4,12 +4,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { ApiError } from "../helpers/ApiError.js";
 
-// Set up storage for uploaded files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadDir = path.join(__dirname, "../../uploads");
 
-// Create uploads directory if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

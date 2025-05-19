@@ -3,13 +3,7 @@ import { ApiRes } from "../helpers/ApiRespones.js";
 import { ApiError } from "../helpers/ApiError.js";
 import { processCSVFile, getDataSummary } from "../utils/csvUtils.js";
 import fs from "fs";
-import upload from "../middleware/Multer.js";
 
-/**
- * Upload and process CSV file
- * @route POST /data/upload
- * @access Private
- */
 export const uploadCSV = asyncHandler(async (req, res, next) => {
   if (!req.file) {
     return next(new ApiError(400, "No file uploaded or file is not CSV"));
@@ -19,7 +13,6 @@ export const uploadCSV = asyncHandler(async (req, res, next) => {
     const filePath = req.file.path;
     const importStats = await processCSVFile(filePath);
 
-    // Clean up the temporary file after processing
     fs.unlinkSync(filePath);
 
     res.status(200).json(
@@ -32,7 +25,6 @@ export const uploadCSV = asyncHandler(async (req, res, next) => {
       )
     );
   } catch (error) {
-    // Clean up file if it exists and there was an error
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
@@ -40,11 +32,6 @@ export const uploadCSV = asyncHandler(async (req, res, next) => {
   }
 });
 
-/**
- * Get summary of imported data
- * @route GET /data/stats
- * @access Private
- */
 export const getDataStats = asyncHandler(async (req, res, next) => {
   try {
     const summary = await getDataSummary();
@@ -61,6 +48,3 @@ export const getDataStats = asyncHandler(async (req, res, next) => {
     next(error);
   }
 });
-
-// Export the configured multer middleware
-export { upload };

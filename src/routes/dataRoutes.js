@@ -1,11 +1,7 @@
 import express from "express";
-import {
-  upload,
-  uploadCSV,
-  getDataStats,
-} from "../controller/csvController.js";
+import { uploadCSV, getDataStats } from "../controller/csvController.js";
 import { Authenticated } from "../middleware/authMiddleware.js";
-
+import upload from "../middleware/Multer.js";
 const DataRouter = express.Router();
 
 /**
