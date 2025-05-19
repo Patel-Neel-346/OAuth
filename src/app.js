@@ -10,11 +10,6 @@ import "./config/passport.js";
 import swaggerDocs from "./config/swagger.js";
 import DataRouter from "./routes/dataRoutes.js";
 import ClientRouter from "./routes/clientRoutes.js";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const PORT = ConfigENV.PORT || 7000;
 const app = express();

@@ -121,7 +121,6 @@ export const getDataSummary = async () => {
       $group: {
         _id: null,
         count: { $sum: 1 },
-        // Only include fields you actually need
         users: { $push: { age: "$age", job: "$job", balance: "$balance" } },
       },
     },
