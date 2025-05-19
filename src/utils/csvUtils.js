@@ -113,9 +113,24 @@ export const getDataSummary = async () => {
     { $sort: { count: -1 } },
   ]);
 
+  const CompaingYesData = await Data.aggregate([
+    {
+      $match: { Target: "yes" },
+    },
+    {
+      $group: {
+        _id: null,
+        count: { $sum: 1 },
+        // Only include fields you actually need
+        users: { $push: { age: "$age", job: "$job", balance: "$balance" } },
+      },
+    },
+  ]);
+
   return {
     total,
     avgBalance: avgBalance.length > 0 ? avgBalance[0].average : 0,
     jobDistribution,
+    CompaingYesData,
   };
 };
