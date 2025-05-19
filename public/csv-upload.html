@@ -139,7 +139,7 @@
         const token =
           getCookie("authToken") || localStorage.getItem("authToken");
         if (!token) {
-          window.location.href = "/auth/login";
+          window.location.href = "http://localhost:7000/auth/google";
           return;
         }
 
