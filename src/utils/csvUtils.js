@@ -2,6 +2,7 @@ import fs from "fs";
 import Papa from "papaparse";
 import { ApiError } from "../helpers/ApiError.js";
 import Data from "../models/Data.js";
+import { type } from "os";
 
 const validateRow = (row) => {
   const errors = [];
@@ -148,7 +149,20 @@ export const getDataSummary = async () => {
   //     },
   //   ])
   //   .limit(1);
-
+  // db.students.find(
+  //   {
+  //     subjects: {
+  //       $elemMatch: {
+  //         assessments: {
+  //           $elemMatch: {
+  //             $and: [{ score: { $gt: 75 } }, { score: { $lt: 90 } }],
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   { fullName: 1, "subjects.assessments.score": 1 }
+  // );
   return {
     total,
     avgBalance: avgBalance.length > 0 ? avgBalance[0].average : 0,
