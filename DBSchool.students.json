@@ -1,0 +1,352 @@
+[{
+  "_id": 1,
+  "firstName": "Devon",
+  "lastName": "Streich",
+  "fullName": "Devon Streich",
+  "studentId": "ST730282",
+  "email": "Devon.Streich45@hotmail.com",
+  "age": 20,
+  "grade": 9,
+  "enrollmentDate": {
+    "$date": "2024-02-25T18:27:07.908Z"
+  },
+  "subjects": [
+    {
+      "name": "Philosophy",
+      "grade": 97,
+      "credits": 2,
+      "assessments": [
+        {
+          "type": "Homework",
+          "score": 60,
+          "date": {
+            "$date": "2025-03-02T09:53:13.112Z"
+          }
+        },
+        {
+          "type": "Test",
+          "score": 63,
+          "date": {
+            "$date": "2024-08-01T13:48:45.019Z"
+          }
+        },
+        {
+          "type": "Quiz",
+          "score": 74,
+          "date": {
+            "$date": "2024-12-12T01:59:47.894Z"
+          }
+        }
+      ]
+    },
+    {
+      "name": "History",
+      "grade": 77,
+      "credits": 2,
+      "assessments": [
+        {
+          "type": "Project",
+          "score": 94,
+          "date": {
+            "$date": "2024-10-17T23:34:59.121Z"
+          }
+        },
+        {
+          "type": "Project",
+          "score": 69,
+          "date": {
+            "$date": "2024-05-25T10:07:34.883Z"
+          }
+        },
+        {
+          "type": "Quiz",
+          "score": 76,
+          "date": {
+            "$date": "2024-09-18T14:51:52.259Z"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Economics",
+      "grade": 62,
+      "credits": 1,
+      "assessments": [
+        {
+          "type": "Quiz",
+          "score": 55,
+          "date": {
+            "$date": "2024-06-26T18:24:49.681Z"
+          }
+        },
+        {
+          "type": "Project",
+          "score": 76,
+          "date": {
+            "$date": "2025-02-11T00:44:49.722Z"
+          }
+        },
+        {
+          "type": "Test",
+          "score": 80,
+          "date": {
+            "$date": "2025-02-08T13:58:21.033Z"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Computer Science",
+      "grade": 69,
+      "credits": 1,
+      "assessments": [
+        {
+          "type": "Homework",
+          "score": 64,
+          "date": {
+            "$date": "2024-11-21T17:58:52.640Z"
+          }
+        },
+        {
+          "type": "Test",
+          "score": 88,
+          "date": {
+            "$date": "2024-06-17T07:05:24.282Z"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Biology",
+      "grade": 92,
+      "credits": 5,
+      "assessments": [
+        {
+          "type": "Project",
+          "score": 72,
+          "date": {
+            "$date": "2025-01-15T02:00:59.514Z"
+          }
+        },
+        {
+          "type": "Test",
+          "score": 58,
+          "date": {
+            "$date": "2025-03-22T08:39:50.320Z"
+          }
+        },
+        {
+          "type": "Test",
+          "score": 85,
+          "date": {
+            "$date": "2025-01-02T19:52:20.059Z"
+          }
+        },
+        {
+          "type": "Homework",
+          "score": 61,
+          "date": {
+            "$date": "2024-06-16T06:39:49.183Z"
+          }
+        },
+        {
+          "type": "Test",
+          "score": 52,
+          "date": {
+            "$date": "2025-04-10T14:03:34.805Z"
+          }
+        }
+      ]
+    }
+  ],
+  "address": {
+    "street": "94392 Barton Road",
+    "city": "North Darbyboro",
+    "state": "Tennessee",
+    "zipCode": "51208",
+    "country": "Martinique"
+  },
+  "contactInfo": {
+    "primary": {
+      "relationship": "Mother",
+      "name": "Leslie Hauck",
+      "phone": "578-600-4267",
+      "email": "Joseph15@hotmail.com"
+    },
+    "emergency": {
+      "relationship": "Family Friend",
+      "name": "Wilbur Abernathy",
+      "phone": "(876) 469-9715 x9103"
+    }
+  },
+  "attendance": [
+    {
+      "date": {
+        "$date": "2025-05-20T08:53:38.324Z"
+      },
+      "status": "excused",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-05-19T08:53:38.324Z"
+      },
+      "status": "late",
+      "notes": "Turba carcer cresco quas color."
+    },
+    {
+      "date": {
+        "$date": "2025-05-16T08:53:38.324Z"
+      },
+      "status": "excused",
+      "notes": "Volubilis succedo facilis."
+    },
+    {
+      "date": {
+        "$date": "2025-05-15T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-05-14T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-05-13T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": "Spiritus auctus conspergo adaugeo."
+    },
+    {
+      "date": {
+        "$date": "2025-05-12T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": "Deserunt labore nostrum utpote vulgaris admoneo in."
+    },
+    {
+      "date": {
+        "$date": "2025-05-09T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-05-08T08:53:38.324Z"
+      },
+      "status": "absent",
+      "notes": "Curatio voco conatus coadunatio sodalitas."
+    },
+    {
+      "date": {
+        "$date": "2025-05-07T08:53:38.324Z"
+      },
+      "status": "excused",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-05-06T08:53:38.324Z"
+      },
+      "status": "absent",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-05-05T08:53:38.324Z"
+      },
+      "status": "excused",
+      "notes": "Aranea crudelis avarus attero villa tubineus tenetur reprehenderit."
+    },
+    {
+      "date": {
+        "$date": "2025-05-02T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": "Tumultus ulterius socius carbo undique benigne depopulo."
+    },
+    {
+      "date": {
+        "$date": "2025-05-01T08:53:38.324Z"
+      },
+      "status": "absent",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-04-30T08:53:38.324Z"
+      },
+      "status": "late",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-04-29T08:53:38.324Z"
+      },
+      "status": "late",
+      "notes": "Ancilla ratione tenetur canto eius canis arto."
+    },
+    {
+      "date": {
+        "$date": "2025-04-28T08:53:38.324Z"
+      },
+      "status": "late",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-04-25T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-04-24T08:53:38.324Z"
+      },
+      "status": "excused",
+      "notes": "Audentia argumentum solus bestia adfero capillus delinquo ars."
+    },
+    {
+      "date": {
+        "$date": "2025-04-23T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": null
+    },
+    {
+      "date": {
+        "$date": "2025-04-22T08:53:38.324Z"
+      },
+      "status": "absent",
+      "notes": "Cilicium aequus aequus tenax verbera arceo."
+    },
+    {
+      "date": {
+        "$date": "2025-04-21T08:53:38.324Z"
+      },
+      "status": "present",
+      "notes": null
+    }
+  ],
+  "activities": [],
+  "healthInfo": {
+    "bloodType": "A-",
+    "allergies": [],
+    "medications": [],
+    "conditions": []
+  },
+  "academicStanding": "Excellent",
+  "financialAid": {
+    "receiving": true,
+    "amount": 3989,
+    "type": "Scholarship"
+  },
+  "notes": []
+}]

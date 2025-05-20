@@ -126,6 +126,29 @@ export const getDataSummary = async () => {
     },
   ]);
 
+  // db.students
+  //   .aggregate([
+  //     {
+  //       $unwind: "$subjects"
+  //     },
+  //     {
+  //       $match: {
+  //         "subjects.name": "Math",
+  //       },
+  //     },
+  //     {
+  //       $sort: {
+  //         "subjects.marks": -1,
+  //       },
+  //     },
+  //     {
+  //       $project: {
+  //         name: 1,
+  //       },
+  //     },
+  //   ])
+  //   .limit(1);
+
   return {
     total,
     avgBalance: avgBalance.length > 0 ? avgBalance[0].average : 0,
