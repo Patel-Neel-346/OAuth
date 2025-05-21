@@ -1,6 +1,7 @@
+// src/middleware/roleMiddleware.js - Fixed version
+
 import { ApiError } from "../helpers/ApiError.js";
 import Role from "../models/Role.js";
-import User from "../models/User.js";
 
 export const hasRole = (allowedRoles) => {
   return async (req, res, next) => {
@@ -11,18 +12,19 @@ export const hasRole = (allowedRoles) => {
 
       const roleNames = userRoles.map((role) => role.name);
 
-      const hasRoles = roleNames.some((role) => allowedRoles.include(role));
+      // Fixed: include() should be includes()
+      const hasRoles = roleNames.some((role) => allowedRoles.includes(role));
 
       if (!hasRoles) {
         return next(
-          new ApiError(403, "Access Denied : Insufficient Permissions")
+          new ApiError(403, "Access Denied: Insufficient Permissions")
         );
       }
 
       req.userRoles = roleNames;
       next();
     } catch (error) {
-      return next(new ApiError(500, "Error checking user permissions:)"));
+      return next(new ApiError(500, "Error checking user permissions"));
     }
   };
 };
