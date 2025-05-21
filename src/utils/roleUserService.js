@@ -15,9 +15,6 @@ class RoleUserService {
    * @returns {Promise<Object>} - The updated role with users array
    */
   static async assignRoleToUser(userId, roleName) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       // Validate role name
       if (!Object.values(ROLE_TYPES).includes(roleName)) {
@@ -25,33 +22,28 @@ class RoleUserService {
       }
 
       // Find user and role
-      const user = await User.findById(userId).session(session);
+      const user = await User.findById(userId);
       if (!user) {
         throw new Error("User not found");
       }
 
-      let role = await Role.findOne({ name: roleName }).session(session);
+      let role = await Role.findOne({ name: roleName });
       if (!role) {
         throw new Error(`Role ${roleName} not found`);
       }
 
       // Check if user is already assigned to this role
       if (role.users.includes(userId)) {
-        await session.commitTransaction();
         return role;
       }
 
       // Add user to role
       role.users.push(userId);
-      await role.save({ session });
+      await role.save();
 
-      await session.commitTransaction();
       return role;
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -62,12 +54,9 @@ class RoleUserService {
    * @returns {Promise<Object>} - The created lender profile
    */
   static async createLenderProfile(roleId, profileData) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       // Validate that the role exists and is a LENDER type
-      const role = await Role.findById(roleId).session(session);
+      const role = await Role.findById(roleId);
       if (!role) {
         throw new Error("Role not found");
       }
@@ -77,9 +66,7 @@ class RoleUserService {
       }
 
       // Check if profile already exists
-      const existingProfile = await LenderProfile.findOne({ roleId }).session(
-        session
-      );
+      const existingProfile = await LenderProfile.findOne({ roleId });
       if (existingProfile) {
         throw new Error("Lender profile already exists for this role");
       }
@@ -90,15 +77,10 @@ class RoleUserService {
         ...profileData,
       });
 
-      await lenderProfile.save({ session });
-      await session.commitTransaction();
-
+      await lenderProfile.save();
       return lenderProfile;
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -109,12 +91,9 @@ class RoleUserService {
    * @returns {Promise<Object>} - The created borrower profile
    */
   static async createBorrowerProfile(roleId, profileData) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       // Validate that the role exists and is a BORROWER type
-      const role = await Role.findById(roleId).session(session);
+      const role = await Role.findById(roleId);
       if (!role) {
         throw new Error("Role not found");
       }
@@ -124,9 +103,7 @@ class RoleUserService {
       }
 
       // Check if profile already exists
-      const existingProfile = await BorrowerProfile.findOne({ roleId }).session(
-        session
-      );
+      const existingProfile = await BorrowerProfile.findOne({ roleId });
       if (existingProfile) {
         throw new Error("Borrower profile already exists for this role");
       }
@@ -137,15 +114,10 @@ class RoleUserService {
         ...profileData,
       });
 
-      await borrowerProfile.save({ session });
-      await session.commitTransaction();
-
+      await borrowerProfile.save();
       return borrowerProfile;
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
