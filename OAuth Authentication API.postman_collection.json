@@ -964,7 +964,11 @@
 				}
 			],
 			"description": "Endpoints for loan application and management (role-specific access)"
-		},
+		}
+	]
+}
+
+	
 
 			
 
