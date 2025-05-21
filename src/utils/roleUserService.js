@@ -1,207 +1,197 @@
-import mongoose from "mongoose";
+// src/utils/roleUserService.js
 import User from "../models/User.js";
 import { Role, ROLE_TYPES } from "../models/Role.js";
-import LenderProfile from "../models/LenderProfile.js";
 import BorrowerProfile from "../models/BorrowerProfile.js";
+import LenderProfile from "../models/LenderProfile.js";
+import { ApiError } from "../helpers/ApiError.js";
 
-/**
- * Service class to handle the relationship between users, roles, and profiles
- */
 class RoleUserService {
   /**
-   * Assign a role to a user
-   * @param {string} userId - The user ID
-   * @param {string} roleName - The role name (from ROLE_TYPES)
-   * @returns {Promise<Object>} - The updated role with users array
+   * Get complete user profile with role-specific data
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Complete user profile
    */
-  static async assignRoleToUser(userId, roleName) {
+  static async getUserCompleteProfile(userId) {
+    try {
+      // Get basic user information
+      const user = await User.findById(userId).select(
+        "-password -refreshToken"
+      );
+      if (!user) {
+        throw new ApiError(404, "User not found");
+      }
+
+      // Get roles assigned to the user
+      const roles = await Role.find({ users: userId });
+      if (!roles || roles.length === 0) {
+        return { user, roles: [] };
+      }
+
+      // Extract role names
+      const roleNames = roles.map((role) => role.name);
+
+      // Create profile object
+      const profile = { user, roles: roleNames };
+
+      // Get role-specific profiles if they exist
+      if (roleNames.includes(ROLE_TYPES.BORROWER)) {
+        const borrowerRole = roles.find((r) => r.name === ROLE_TYPES.BORROWER);
+        const borrowerProfile = await BorrowerProfile.findOne({
+          roleId: borrowerRole._id,
+        });
+        if (borrowerProfile) {
+          profile.borrowerProfile = borrowerProfile;
+        }
+      }
+
+      if (roleNames.includes(ROLE_TYPES.LENDER)) {
+        const lenderRole = roles.find((r) => r.name === ROLE_TYPES.LENDER);
+        const lenderProfile = await LenderProfile.findOne({
+          roleId: lenderRole._id,
+        });
+        if (lenderProfile) {
+          profile.lenderProfile = lenderProfile;
+        }
+      }
+
+      return profile;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Assign a role to a user and create role-specific profile
+   * @param {string} userId - User ID
+   * @param {string} roleName - Role name from ROLE_TYPES
+   * @param {Object} profileData - Profile data for the role
+   * @returns {Promise<Object>} Created role and profile
+   */
+  static async assignRoleToUser(userId, roleName, profileData = {}) {
     try {
       // Validate role name
       if (!Object.values(ROLE_TYPES).includes(roleName)) {
-        throw new Error(`Invalid role name: ${roleName}`);
+        throw new ApiError(400, "Invalid role type");
       }
 
-      // Find user and role
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error("User not found");
-      }
-
+      // Get or create the role
       let role = await Role.findOne({ name: roleName });
       if (!role) {
-        throw new Error(`Role ${roleName} not found`);
+        // Create the role if it doesn't exist
+        role = await Role.create({
+          name: roleName,
+          description: `${
+            roleName.charAt(0).toUpperCase() + roleName.slice(1)
+          } role`,
+        });
       }
 
-      // Check if user is already assigned to this role
+      // Check if user already has this role
       if (role.users.includes(userId)) {
-        return role;
+        throw new ApiError(400, `User already has the ${roleName} role`);
       }
 
       // Add user to role
       role.users.push(userId);
       await role.save();
 
-      return role;
+      let roleProfile = null;
+
+      // Create role-specific profile based on role type
+      if (
+        roleName === ROLE_TYPES.BORROWER &&
+        Object.keys(profileData).length > 0
+      ) {
+        roleProfile = await BorrowerProfile.create({
+          roleId: role._id,
+          ...profileData,
+        });
+      } else if (
+        roleName === ROLE_TYPES.LENDER &&
+        Object.keys(profileData).length > 0
+      ) {
+        roleProfile = await LenderProfile.create({
+          roleId: role._id,
+          ...profileData,
+        });
+      }
+
+      return { role, profile: roleProfile };
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Create a lender profile for a role
-   * @param {string} roleId - The lender role ID
-   * @param {Object} profileData - The lender profile data
-   * @returns {Promise<Object>} - The created lender profile
+   * Register a new user with role and profile
+   * @param {Object} userData - Basic user data (name, email, password)
+   * @param {string} roleName - Role name from ROLE_TYPES
+   * @param {Object} profileData - Profile data for the role
+   * @returns {Promise<Object>} Created user with role and profile
    */
-  static async createLenderProfile(roleId, profileData) {
+  static async registerUserWithRole(userData, roleName, profileData = {}) {
     try {
-      // Validate that the role exists and is a LENDER type
-      const role = await Role.findById(roleId);
-      if (!role) {
-        throw new Error("Role not found");
+      // Create the user
+      const user = await User.create(userData);
+
+      // Assign default USER role
+      await this.assignRoleToUser(user._id, ROLE_TYPES.USER);
+
+      // If additional role is specified, assign that as well
+      if (roleName && roleName !== ROLE_TYPES.USER) {
+        await this.assignRoleToUser(user._id, roleName, profileData);
       }
 
-      if (role.name !== ROLE_TYPES.LENDER) {
-        throw new Error("Invalid role type. Must be a LENDER role.");
-      }
-
-      // Check if profile already exists
-      const existingProfile = await LenderProfile.findOne({ roleId });
-      if (existingProfile) {
-        throw new Error("Lender profile already exists for this role");
-      }
-
-      // Create lender profile
-      const lenderProfile = new LenderProfile({
-        roleId,
-        ...profileData,
-      });
-
-      await lenderProfile.save();
-      return lenderProfile;
+      return user;
     } catch (error) {
+      // If there was an error, try to delete the partially created user
+      if (error.code !== 11000) {
+        // Not a duplicate key error
+        const user = await User.findOne({ email: userData.email });
+        if (user) {
+          await User.deleteOne({ _id: user._id });
+        }
+      }
       throw error;
     }
   }
 
   /**
-   * Create a borrower profile for a role
-   * @param {string} roleId - The borrower role ID
-   * @param {Object} profileData - The borrower profile data
-   * @returns {Promise<Object>} - The created borrower profile
+   * Remove a role from a user and delete the associated profile
+   * @param {string} userId - User ID
+   * @param {string} roleName - Role name from ROLE_TYPES
+   * @returns {Promise<boolean>} Success status
    */
-  static async createBorrowerProfile(roleId, profileData) {
+  static async removeRoleFromUser(userId, roleName) {
     try {
-      // Validate that the role exists and is a BORROWER type
-      const role = await Role.findById(roleId);
+      // Find the role
+      const role = await Role.findOne({ name: roleName });
       if (!role) {
-        throw new Error("Role not found");
+        throw new ApiError(404, "Role not found");
       }
 
-      if (role.name !== ROLE_TYPES.BORROWER) {
-        throw new Error("Invalid role type. Must be a BORROWER role.");
+      // Check if user has this role
+      if (!role.users.includes(userId)) {
+        throw new ApiError(400, `User does not have the ${roleName} role`);
       }
 
-      // Check if profile already exists
-      const existingProfile = await BorrowerProfile.findOne({ roleId });
-      if (existingProfile) {
-        throw new Error("Borrower profile already exists for this role");
+      // Remove user from role
+      role.users = role.users.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+      await role.save();
+
+      // Delete role-specific profile
+      if (roleName === ROLE_TYPES.BORROWER) {
+        await BorrowerProfile.deleteOne({ roleId: role._id });
+      } else if (roleName === ROLE_TYPES.LENDER) {
+        await LenderProfile.deleteOne({ roleId: role._id });
       }
 
-      // Create borrower profile
-      const borrowerProfile = new BorrowerProfile({
-        roleId,
-        ...profileData,
-      });
-
-      await borrowerProfile.save();
-      return borrowerProfile;
+      return true;
     } catch (error) {
       throw error;
     }
-  }
-
-  /**
-   * Get all users with a specific role
-   * @param {string} roleName - The role name (from ROLE_TYPES)
-   * @returns {Promise<Array>} - Users with the specified role
-   */
-  static async getUsersByRole(roleName) {
-    // Find role
-    const role = await Role.findOne({ name: roleName }).populate("users");
-    if (!role) {
-      throw new Error(`Role ${roleName} not found`);
-    }
-
-    return role.users;
-  }
-
-  /**
-   * Get a user's complete profile including role and type-specific profiles
-   * @param {string} userId - The user ID
-   * @returns {Promise<Object>} - User's complete profile
-   */
-  static async getUserCompleteProfile(userId) {
-    // Get user basic info
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Find all roles assigned to this user
-    const roles = await Role.find({ users: userId });
-
-    // Initialize result object
-    const result = {
-      user,
-      roles,
-    };
-
-    // Check for lender profile
-    const lenderRole = roles.find((role) => role.name === ROLE_TYPES.LENDER);
-    if (lenderRole) {
-      const lenderProfile = await LenderProfile.findOne({
-        roleId: lenderRole._id,
-      });
-      if (lenderProfile) {
-        result.lenderProfile = lenderProfile;
-      }
-    }
-
-    // Check for borrower profile
-    const borrowerRole = roles.find(
-      (role) => role.name === ROLE_TYPES.BORROWER
-    );
-    if (borrowerRole) {
-      const borrowerProfile = await BorrowerProfile.findOne({
-        roleId: borrowerRole._id,
-      });
-      if (borrowerProfile) {
-        result.borrowerProfile = borrowerProfile;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Remove a user from a role
-   * @param {string} userId - The user ID
-   * @param {string} roleName - The role name (from ROLE_TYPES)
-   * @returns {Promise<Object>} - The updated role
-   */
-  static async removeUserFromRole(userId, roleName) {
-    // Find role
-    const role = await Role.findOne({ name: roleName });
-    if (!role) {
-      throw new Error(`Role ${roleName} not found`);
-    }
-
-    // Remove user from role's users array
-    role.users = role.users.filter((id) => id.toString() !== userId);
-    await role.save();
-
-    return role;
   }
 }
 

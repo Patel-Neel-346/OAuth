@@ -196,80 +196,74 @@
         .addEventListener("submit", async function (e) {
           e.preventDefault();
 
+          // Get form data
           const name = document.getElementById("name").value;
           const email = document.getElementById("email").value;
           const password = document.getElementById("password").value;
           const role = document.getElementById("role").value;
 
+          // Create registration data object
+          const registrationData = {
+            name,
+            email,
+            password,
+            role,
+          };
+
+          // Add role-specific fields
+          if (role === "borrower") {
+            registrationData.monthlyIncome =
+              document.getElementById("monthlyIncome").value;
+            registrationData.employmentStatus =
+              document.getElementById("employmentStatus").value;
+          } else if (role === "lender") {
+            registrationData.lendingCapacity =
+              document.getElementById("lendingCapacity").value;
+            registrationData.interestRatePersonal = document.getElementById(
+              "interestRatePersonal"
+            ).value;
+          }
+
           try {
-            // Register the user
-            const userResponse = await fetch("/auth/register", {
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            submitButton.textContent = "Registering...";
+            submitButton.disabled = true;
+
+            // Register the user with all data in one request
+            const response = await fetch("/auth/register", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ name, email, password }),
+              body: JSON.stringify(registrationData),
               credentials: "include",
             });
 
-            const userData = await userResponse.json();
+            const result = await response.json();
 
-            if (!userResponse.ok) {
-              throw new Error(userData.message || "Registration failed");
+            // Reset button state
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
+
+            if (!response.ok) {
+              throw new Error(result.message || "Registration failed");
             }
 
-            // If user registered successfully, assign the role
-            if (role !== "user") {
-              // Create appropriate profile based on role
-              if (role === "borrower") {
-                const monthlyIncome =
-                  document.getElementById("monthlyIncome").value;
-                const employmentStatus =
-                  document.getElementById("employmentStatus").value;
-
-                await fetch("/api/borrower/profile", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${userData.data.authToken}`,
-                  },
-                  body: JSON.stringify({
-                    monthlyIncome,
-                    employmentStatus,
-                    totalDebt: 0,
-                    creditScore: 700, // Default starting score
-                  }),
-                });
-              } else if (role === "lender") {
-                const lendingCapacity =
-                  document.getElementById("lendingCapacity").value;
-                const interestRatePersonal = document.getElementById(
-                  "interestRatePersonal"
-                ).value;
-
-                await fetch("/api/lender/profile", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${userData.data.authToken}`,
-                  },
-                  body: JSON.stringify({
-                    lendingCapacity,
-                    interestRate: {
-                      personal: interestRatePersonal,
-                      business: parseFloat(interestRatePersonal) + 1.5, // Default business rate
-                      home: parseFloat(interestRatePersonal) - 1, // Default home loan rate
-                    },
-                    availableFunds: lendingCapacity,
-                  }),
-                });
-              }
-            }
-
+            // Show success message
             alert("Registration successful! Please login.");
-            window.location.href = "/login.html";
+
+            // Redirect to appropriate dashboard based on role
+            if (role === "lender") {
+              window.location.href = "/lender-dashboard.html";
+            } else if (role === "borrower") {
+              window.location.href = "/borrower-dashboard.html";
+            } else {
+              window.location.href = "/login.html";
+            }
           } catch (error) {
-            console.error("Error:", error);
+            console.error("Registration error:", error);
             alert(
               error.message ||
                 "An error occurred during registration. Please try again."

@@ -1,6 +1,8 @@
 import { ApiError } from "../helpers/ApiError.js";
 import { ApiRes } from "../helpers/ApiRespones.js";
 import User from "../models/User.js";
+import { ROLE_TYPES } from "../models/Role.js";
+import RoleUserService from "../utils/roleUserService.js";
 import { asyncHandler } from "../helpers/asyncHandler.js";
 import {
   generateAuthToken,
@@ -9,7 +11,7 @@ import {
 } from "../utils/tokenUtils.js";
 
 export const SignUp = asyncHandler(async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   // Validate input
   if (!name || !email || !password) {
@@ -22,49 +24,83 @@ export const SignUp = asyncHandler(async (req, res, next) => {
     return next(new ApiError(400, "User already exists with this email"));
   }
 
-  // Create new user
-  const user = await User.create({
-    name,
-    email,
-    password,
-  });
+  try {
+    // Create user with role
+    const userData = { name, email, password };
+    const roleName = role || ROLE_TYPES.USER;
 
-  // Generate tokens
-  const authToken = generateAuthToken(user);
-  const refreshToken = generateRefreshToken(user);
+    // Extract profile data based on role
+    let profileData = {};
 
-  // Save refresh token to user document
-  user.refreshToken = refreshToken;
-  await user.save();
+    if (roleName === ROLE_TYPES.BORROWER) {
+      const { monthlyIncome, employmentStatus } = req.body;
+      profileData = {
+        monthlyIncome: parseFloat(monthlyIncome) || 0,
+        employmentStatus: employmentStatus || "unemployed",
+        creditScore: 700, // Default starting score
+        totalDebt: 0,
+      };
+    } else if (roleName === ROLE_TYPES.LENDER) {
+      const { lendingCapacity, interestRatePersonal } = req.body;
+      profileData = {
+        lendingCapacity: parseFloat(lendingCapacity) || 0,
+        availableFunds: parseFloat(lendingCapacity) || 0,
+        interestRate: {
+          personal: parseFloat(interestRatePersonal) || 5,
+          business: parseFloat(interestRatePersonal) + 1.5 || 6.5,
+          home: parseFloat(interestRatePersonal) - 1 || 4,
+        },
+      };
+    }
 
-  // Set cookies
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+    // Register user with role and profile
+    const user = await RoleUserService.registerUserWithRole(
+      userData,
+      roleName,
+      profileData
+    );
 
-  res.cookie("authToken", authToken, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 1000, // 1 hour
-  });
+    // Generate tokens
+    const authToken = generateAuthToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-  // Return response without password
-  const userWithoutPassword = {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-  };
+    // Save refresh token to user document
+    user.refreshToken = refreshToken;
+    await user.save();
 
-  res.status(201).json(
-    new ApiRes(
-      201,
-      {
-        user: userWithoutPassword,
-        authToken,
-      },
-      "User registered successfully"
-    )
-  );
+    // Set cookies
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.cookie("authToken", authToken, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    // Return response without password
+    const userResponse = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    };
+
+    res.status(201).json(
+      new ApiRes(
+        201,
+        {
+          user: userResponse,
+          authToken,
+          role: roleName,
+        },
+        "User registered successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Registration error:", error);
+    return next(new ApiError(500, error.message || "Registration failed"));
+  }
 });
 
 export const Login = asyncHandler(async (req, res, next) => {
@@ -92,6 +128,9 @@ export const Login = asyncHandler(async (req, res, next) => {
     return next(new ApiError(401, "Invalid email or password"));
   }
 
+  // Get complete user profile with roles
+  const userProfile = await RoleUserService.getUserCompleteProfile(user._id);
+
   // Generate tokens
   const authToken = generateAuthToken(user);
   const refreshToken = generateRefreshToken(user);
@@ -111,11 +150,12 @@ export const Login = asyncHandler(async (req, res, next) => {
     maxAge: 60 * 60 * 1000, // 1 hour
   });
 
-  // Return response
+  // Return response with roles
   const userWithoutPassword = {
     _id: user._id,
     name: user.name,
     email: user.email,
+    roles: userProfile.roles || [],
   };
 
   res.status(200).json(
@@ -124,13 +164,14 @@ export const Login = asyncHandler(async (req, res, next) => {
       {
         user: userWithoutPassword,
         authToken,
+        lenderProfile: userProfile.lenderProfile || null,
+        borrowerProfile: userProfile.borrowerProfile || null,
       },
       "Login successful"
     )
   );
 });
 
-// Refresh token endpoint
 export const RefreshToken = asyncHandler(async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
 
@@ -210,15 +251,21 @@ export const Logout = asyncHandler(async (req, res, next) => {
 // Get user profile
 export const GetUserProfile = asyncHandler(async (req, res, next) => {
   try {
-    const user = await User.findById(req.user).select(
-      "-password -refreshToken"
-    );
+    // Get complete user profile with roles
+    const userProfile = await RoleUserService.getUserCompleteProfile(req.user);
 
-    if (!user) {
+    if (!userProfile.user) {
       return next(new ApiError(404, "User not found"));
     }
 
-    res.status(200).json(new ApiRes(200, { user }));
+    res.status(200).json(
+      new ApiRes(200, {
+        user: userProfile.user,
+        roles: userProfile.roles,
+        lenderProfile: userProfile.lenderProfile || null,
+        borrowerProfile: userProfile.borrowerProfile || null,
+      })
+    );
   } catch (error) {
     next(new ApiError(500, "Failed to get user profile"));
   }
