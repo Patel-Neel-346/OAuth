@@ -344,16 +344,16 @@ export const GoogleCallback = asyncHandler(async (req, res, next) => {
 
     // Redirect to frontend with success and role info
     const redirectUrl = role
-      ? `http://localhost:5500/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
+      ? `http://localhost:7000/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
           .roles.length}`
-      : `http://localhost:5500/auth/success?token=${authToken}`;
+      : `http://localhost:7000/auth/success?token=${authToken}`;
 
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth role assignment error:", error);
     // Redirect to error page or login with error message
     res.redirect(
-      `http://localhost:5500/auth/login?error=role_assignment_failed`
+      `http://localhost:7000/auth/login?error=role_assignment_failed`
     );
   }
 });
@@ -437,16 +437,16 @@ export const FacebookCallback = asyncHandler(async (req, res, next) => {
 
     // Redirect to frontend with success and role info
     const redirectUrl = role
-      ? `http://localhost:5500/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
+      ? `http://localhost:7000/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
           .roles.length}`
-      : `http://localhost:5500/auth/success?token=${authToken}`;
+      : `http://localhost:7000/auth/success?token=${authToken}`;
 
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Facebook OAuth role assignment error:", error);
     // Redirect to error page or login with error message
     res.redirect(
-      `http://localhost:5500/auth/login?error=role_assignment_failed`
+      `http://localhost:7000/auth/login?error=role_assignment_failed`
     );
   }
 });
