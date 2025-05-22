@@ -6,11 +6,6 @@ import LenderProfile from "../models/LenderProfile.js";
 import { ApiError } from "../helpers/ApiError.js";
 
 class RoleUserService {
-  /**
-   * Get complete user profile with role-specific data
-   * @param {string} userId - User ID
-   * @returns {Promise<Object>} Complete user profile
-   */
   static async getUserCompleteProfile(userId) {
     try {
       // Get basic user information
@@ -60,13 +55,6 @@ class RoleUserService {
     }
   }
 
-  /**
-   * Assign a role to a user and create role-specific profile
-   * @param {string} userId - User ID
-   * @param {string} roleName - Role name from ROLE_TYPES
-   * @param {Object} profileData - Profile data for the role
-   * @returns {Promise<Object>} Created role and profile
-   */
   static async assignRoleToUser(userId, roleName, profileData = {}) {
     try {
       // Validate role name
@@ -122,18 +110,12 @@ class RoleUserService {
     }
   }
 
-  /**
-   * Register a new user with role and profile
-   * @param {Object} userData - Basic user data (name, email, password)
-   * @param {string} roleName - Role name from ROLE_TYPES
-   * @param {Object} profileData - Profile data for the role
-   * @returns {Promise<Object>} Created user with role and profile
-   */
   static async registerUserWithRole(userData, roleName, profileData = {}) {
     try {
       // Create the user
       const user = await User.create(userData);
 
+      //generate User Account Number  Right now its test Case for Only when i create User Account,etc there i will Created Account number for all User
       if (!user.accountNumber) {
         const randomDigits = Math.floor(10000000 + Math.random() * 90000000);
         user.accountNumber = `ACC${randomDigits}`;
@@ -152,7 +134,6 @@ class RoleUserService {
     } catch (error) {
       // If there was an error, try to delete the partially created user
       if (error.code !== 11000) {
-        // Not a duplicate key error
         const user = await User.findOne({ email: userData.email });
         if (user) {
           await User.deleteOne({ _id: user._id });
@@ -162,43 +143,37 @@ class RoleUserService {
     }
   }
 
-  /**
-   * Remove a role from a user and delete the associated profile
-   * @param {string} userId - User ID
-   * @param {string} roleName - Role name from ROLE_TYPES
-   * @returns {Promise<boolean>} Success status
-   */
-  static async removeRoleFromUser(userId, roleName) {
-    try {
-      // Find the role
-      const role = await Role.findOne({ name: roleName });
-      if (!role) {
-        throw new ApiError(404, "Role not found");
-      }
+  // static async removeRoleFromUser(userId, roleName) {
+  //   try {
+  //     // Find the role
+  //     const role = await Role.findOne({ name: roleName });
+  //     if (!role) {
+  //       throw new ApiError(404, "Role not found");
+  //     }
 
-      // Check if user has this role
-      if (!role.users.includes(userId)) {
-        throw new ApiError(400, `User does not have the ${roleName} role`);
-      }
+  //     // Check if user has this role
+  //     if (!role.users.includes(userId)) {
+  //       throw new ApiError(400, `User does not have the ${roleName} role`);
+  //     }
 
-      // Remove user from role
-      role.users = role.users.filter(
-        (id) => id.toString() !== userId.toString()
-      );
-      await role.save();
+  //     // Remove user from role
+  //     role.users = role.users.filter(
+  //       (id) => id.toString() !== userId.toString()
+  //     );
+  //     await role.save();
 
-      // Delete role-specific profile
-      if (roleName === ROLE_TYPES.BORROWER) {
-        await BorrowerProfile.deleteOne({ roleId: role._id });
-      } else if (roleName === ROLE_TYPES.LENDER) {
-        await LenderProfile.deleteOne({ roleId: role._id });
-      }
+  //     // Delete role-specific profile
+  //     if (roleName === ROLE_TYPES.BORROWER) {
+  //       await BorrowerProfile.deleteOne({ roleId: role._id });
+  //     } else if (roleName === ROLE_TYPES.LENDER) {
+  //       await LenderProfile.deleteOne({ roleId: role._id });
+  //     }
 
-      return true;
-    } catch (error) {
-      throw error;
-    }
-  }
+  //     return true;
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 }
 
 export default RoleUserService;

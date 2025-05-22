@@ -13,19 +13,16 @@ import {
 export const SignUp = asyncHandler(async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
-  // Validate input
   if (!name || !email || !password) {
     return next(new ApiError(400, "All fields are required"));
   }
 
-  // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ApiError(400, "User already exists with this email"));
   }
 
   try {
-    // Create user with role
     const userData = { name, email, password };
     const roleName = role || ROLE_TYPES.USER;
 
@@ -37,7 +34,7 @@ export const SignUp = asyncHandler(async (req, res, next) => {
       profileData = {
         monthlyIncome: parseFloat(monthlyIncome) || 0,
         employmentStatus: employmentStatus || "unemployed",
-        creditScore: 700, // Default starting score
+        creditScore: 700,
         totalDebt: 0,
       };
     } else if (roleName === ROLE_TYPES.LENDER) {
@@ -62,26 +59,22 @@ export const SignUp = asyncHandler(async (req, res, next) => {
 
     console.log(user);
 
-    // Generate tokens
     const authToken = generateAuthToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // Save refresh token to user document
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Set cookies
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie("authToken", authToken, {
       httpOnly: true,
-      maxAge: 60 * 60 * 1000, // 1 hour
+      maxAge: 60 * 60 * 1000,
     });
 
-    // Return response without password
     const userResponse = {
       _id: user._id,
       name: user.name,

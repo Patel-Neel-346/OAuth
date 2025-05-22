@@ -19,7 +19,7 @@ import {
 import { hasRole } from "../middleware/roleMiddleware.js";
 import { ROLE_TYPES } from "../models/Role.js";
 // Import Role Router for role-based endpoints
-import RoleRouter from "./roleRoutes.js";
+// import RoleRouter from "./roleRoutes.js";
 import {
   loginValidationRules,
   registerValidationRules,
@@ -398,11 +398,11 @@ AuthRouter.delete("/role/:roleName", Authenticated, async (req, res, next) => {
 });
 
 // Mount the Role Router for admin-only role management
-AuthRouter.use(
-  "/admin/roles",
-  Authenticated,
-  hasRole(ROLE_TYPES.ADMIN),
-  RoleRouter
-);
+// AuthRouter.use(
+//   "/admin/roles",
+//   Authenticated,
+//   hasRole(ROLE_TYPES.ADMIN),
+//   RoleRouter
+// );
 
 export default AuthRouter;
