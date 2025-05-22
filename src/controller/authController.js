@@ -266,67 +266,149 @@ export const GetUserProfile = asyncHandler(async (req, res, next) => {
   }
 });
 
-// OAuth success
-export const AuthSuccess = asyncHandler(async (req, res, next) => {
-  // This can be used to send a success page or redirect to the frontend
-  res.status(200).json(
-    new ApiRes(200, {
-      success: true,
-      message: "Authentication successful",
-    })
-  );
-});
-
 // Google OAuth callback
 export const GoogleCallback = asyncHandler(async (req, res, next) => {
   const user = req.user;
+  const { role, ...profileData } = req.query; // Get role from query params
 
-  // Generate tokens
-  const authToken = generateAuthToken(user);
-  const refreshToken = generateRefreshToken(user);
+  try {
+    // Check if this is a new user (just created) or existing user
+    const existingRoles = await RoleUserService.getUserCompleteProfile(
+      user._id
+    );
 
-  // Save refresh token to user
-  user.refreshToken = refreshToken;
-  await user.save();
+    // If user has no roles or only has USER role, and a specific role is requested
+    if (role && Object.values(ROLE_TYPES).includes(role.toUpperCase())) {
+      const requestedRole = role.toUpperCase();
 
-  // Set cookies
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+      // Only assign role if user doesn't already have it
+      if (!existingRoles.roles.includes(requestedRole)) {
+        await RoleUserService.assignRoleToUser(
+          user._id,
+          requestedRole,
+          profileData
+        );
+      }
+    }
 
-  res.cookie("authToken", authToken, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 1000, // 1 hour
-  });
+    // Generate tokens
+    const authToken = generateAuthToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-  // Redirect to frontend or send response
-  res.redirect(`/auth/success?token=${authToken}`);
+    // Save refresh token to user
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    // Set cookies
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.cookie("authToken", authToken, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    // Get updated user profile with roles
+    const updatedProfile = await RoleUserService.getUserCompleteProfile(
+      user._id
+    );
+
+    // Redirect to frontend with success and role info
+    const redirectUrl = role
+      ? `/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
+          .roles.length}`
+      : `/auth/success?token=${authToken}`;
+
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("Google OAuth role assignment error:", error);
+    // Redirect to error page or login with error message
+    res.redirect(`/auth/login?error=role_assignment_failed`);
+  }
 });
 
 // Facebook OAuth callback
 export const FacebookCallback = asyncHandler(async (req, res, next) => {
   const user = req.user;
+  const { role, ...profileData } = req.query; // Get role from query params
 
-  // Generate tokens
-  const authToken = generateAuthToken(user);
-  const refreshToken = generateRefreshToken(user);
+  try {
+    // Check if this is a new user (just created) or existing user
+    const existingRoles = await RoleUserService.getUserCompleteProfile(
+      user._id
+    );
 
-  // Save refresh token to user
-  user.refreshToken = refreshToken;
-  await user.save();
+    // If user has no roles or only has USER role, and a specific role is requested
+    if (role && Object.values(ROLE_TYPES).includes(role.toUpperCase())) {
+      const requestedRole = role.toUpperCase();
 
-  // Set cookies
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+      // Only assign role if user doesn't already have it
+      if (!existingRoles.roles.includes(requestedRole)) {
+        await RoleUserService.assignRoleToUser(
+          user._id,
+          requestedRole,
+          profileData
+        );
+      }
+    }
 
-  res.cookie("authToken", authToken, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 1000, // 1 hour
-  });
+    // Generate tokens
+    const authToken = generateAuthToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-  // Redirect to frontend or send response
-  res.redirect(`/auth/success?token=${authToken}`);
+    // Save refresh token to user
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    // Set cookies
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.cookie("authToken", authToken, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    // Get updated user profile with roles
+    const updatedProfile = await RoleUserService.getUserCompleteProfile(
+      user._id
+    );
+
+    // Redirect to frontend with success and role info
+    const redirectUrl = role
+      ? `/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
+          .roles.length}`
+      : `/auth/success?token=${authToken}`;
+
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("Facebook OAuth role assignment error:", error);
+    // Redirect to error page or login with error message
+    res.redirect(`/auth/login?error=role_assignment_failed`);
+  }
+});
+
+export const AuthSuccess = asyncHandler(async (req, res, next) => {
+  const { token, role, newUser } = req.query;
+
+  if (!token) {
+    return res
+      .status(400)
+      .json(new ApiRes(400, null, "Authentication token not found"));
+  }
+
+  // You can customize this response based on your frontend needs
+  res.status(200).json(
+    new ApiRes(200, {
+      success: true,
+      message: "Authentication successful",
+      token,
+      role: role || null,
+      isNewUser: newUser === "true",
+    })
+  );
 });

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Role-Based OAuth Registration</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .role-selection {
+        margin: 20px 0;
+      }
+      .role-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .role-card:hover {
+        border-color: #4285f4;
+        background-color: #f8f9ff;
+      }
+      .role-card.selected {
+        border-color: #4285f4;
+        background-color: #e8f0fe;
+      }
+      .oauth-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .oauth-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        text-decoration: none;
+        text-align: center;
+        transition: background-color 0.3s ease;
+      }
+      .google-btn {
+        background-color: #4285f4;
+        color: white;
+      }
+      .google-btn:hover {
+        background-color: #3367d6;
+      }
+      .facebook-btn {
+        background-color: #1877f2;
+        color: white;
+      }
+      .facebook-btn:hover {
+        background-color: #166fe5;
+      }
+      .form-group {
+        margin: 15px 0;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .hidden {
+        display: none;
+      }
+      .error {
+        color: #d93025;
+        margin-top: 10px;
+      }
+      .success {
+        color: #137333;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Register with Role-Based Access</h1>
+      <p>Choose your role and sign up with Google or Facebook</p>
+
+      <div class="role-selection">
+        <h3>Select Your Role:</h3>
+
+        <div class="role-card" data-role="user">
+          <h4>Regular User</h4>
+          <p>
+            Basic access to the platform without specific lending or borrowing
+            privileges.
+          </p>
+        </div>
+
+        <div class="role-card" data-role="borrower">
+          <h4>Borrower</h4>
+          <p>Apply for loans and manage your borrowing activities.</p>
+        </div>
+
+        <div class="role-card" data-role="lender">
+          <h4>Lender</h4>
+          <p>Provide loans to borrowers and manage your lending portfolio.</p>
+        </div>
+      </div>
+
+      <!-- Borrower Profile Fields -->
+      <div id="borrower-fields" class="hidden">
+        <h4>Borrower Information</h4>
+        <div class="form-group">
+          <label for="monthlyIncome">Monthly Income ($)</label>
+          <input
+            type="number"
+            id="monthlyIncome"
+            name="monthlyIncome"
+            min="0"
+            step="100"
+          />
+        </div>
+        <div class="form-group">
+          <label for="employmentStatus">Employment Status</label>
+          <select id="employmentStatus" name="employmentStatus">
+            <option value="">Select Employment Status</option>
+            <option value="employed">Employed</option>
+            <option value="self-employed">Self-Employed</option>
+            <option value="unemployed">Unemployed</option>
+            <option value="retired">Retired</option>
+            <option value="student">Student</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Lender Profile Fields -->
+      <div id="lender-fields" class="hidden">
+        <h4>Lender Information</h4>
+        <div class="form-group">
+          <label for="lendingCapacity">Lending Capacity ($)</label>
+          <input
+            type="number"
+            id="lendingCapacity"
+            name="lendingCapacity"
+            min="0"
+            step="1000"
+          />
+        </div>
+        <div class="form-group">
+          <label for="interestRatePersonal"
+            >Base Interest Rate for Personal Loans (%)</label
+          >
+          <input
+            type="number"
+            id="interestRatePersonal"
+            name="interestRatePersonal"
+            min="1"
+            max="30"
+            step="0.1"
+          />
+        </div>
+      </div>
+
+      <div class="oauth-buttons">
+        <button class="oauth-btn google-btn" onclick="registerWithGoogle()">
+          Continue with Google
+        </button>
+        <button class="oauth-btn facebook-btn" onclick="registerWithFacebook()">
+          Continue with Facebook
+        </button>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <script>
+      let selectedRole = "user";
+
+      // Handle role selection
+      document.querySelectorAll(".role-card").forEach((card) => {
+        card.addEventListener("click", function () {
+          // Remove previous selection
+          document
+            .querySelectorAll(".role-card")
+            .forEach((c) => c.classList.remove("selected"));
+
+          // Add selection to clicked card
+          this.classList.add("selected");
+          selectedRole = this.dataset.role;
+
+          // Show/hide role-specific fields
+          document.getElementById("borrower-fields").classList.add("hidden");
+          document.getElementById("lender-fields").classList.add("hidden");
+
+          if (selectedRole === "borrower") {
+            document
+              .getElementById("borrower-fields")
+              .classList.remove("hidden");
+          } else if (selectedRole === "lender") {
+            document.getElementById("lender-fields").classList.remove("hidden");
+          }
+        });
+      });
+
+      function validateRoleData() {
+        if (selectedRole === "borrower") {
+          const monthlyIncome = document.getElementById("monthlyIncome").value;
+          const employmentStatus =
+            document.getElementById("employmentStatus").value;
+
+          if (!monthlyIncome || !employmentStatus) {
+            showMessage(
+              "Please fill in all borrower information fields.",
+              "error"
+            );
+            return false;
+          }
+        } else if (selectedRole === "lender") {
+          const lendingCapacity =
+            document.getElementById("lendingCapacity").value;
+          const interestRate = document.getElementById(
+            "interestRatePersonal"
+          ).value;
+
+          if (!lendingCapacity || !interestRate) {
+            showMessage(
+              "Please fill in all lender information fields.",
+              "error"
+            );
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function registerWithGoogle() {
+        if (!validateRoleData()) return;
+
+        let url = "http://localhost:7000/auth/google";
+
+        if (selectedRole !== "user") {
+          const params = new URLSearchParams({
+            role: selectedRole.toUpperCase(),
+          });
+
+          if (selectedRole === "borrower") {
+            params.append(
+              "monthlyIncome",
+              document.getElementById("monthlyIncome").value
+            );
+            params.append(
+              "employmentStatus",
+              document.getElementById("employmentStatus").value
+            );
+          } else if (selectedRole === "lender") {
+            params.append(
+              "lendingCapacity",
+              document.getElementById("lendingCapacity").value
+            );
+            params.append(
+              "interestRatePersonal",
+              document.getElementById("interestRatePersonal").value
+            );
+          }
+
+          url += "?" + params.toString();
+        }
+
+        window.location.href = url;
+      }
+
+      function registerWithFacebook() {
+        if (!validateRoleData()) return;
+
+        let url = "http://localhost:7000/auth/facebook";
+
+        if (selectedRole !== "user") {
+          const params = new URLSearchParams({
+            role: selectedRole.toUpperCase(),
+          });
+
+          if (selectedRole === "borrower") {
+            params.append(
+              "monthlyIncome",
+              document.getElementById("monthlyIncome").value
+            );
+            params.append(
+              "employmentStatus",
+              document.getElementById("employmentStatus").value
+            );
+          } else if (selectedRole === "lender") {
+            params.append(
+              "lendingCapacity",
+              document.getElementById("lendingCapacity").value
+            );
+            params.append(
+              "interestRatePersonal",
+              document.getElementById("interestRatePersonal").value
+            );
+          }
+
+          url += "?" + params.toString();
+        }
+
+        window.location.href = url;
+      }
+
+      function showMessage(message, type) {
+        const messageDiv = document.getElementById("message");
+        messageDiv.textContent = message;
+        messageDiv.className = type;
+      }
+
+      // Handle URL parameters for success/error messages
+      window.addEventListener("load", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get("error");
+        const success = urlParams.get("success");
+        const role = urlParams.get("role");
+
+        if (error) {
+          let message = "Authentication failed.";
+          if (error === "oauth_failed") {
+            message = "OAuth authentication failed. Please try again.";
+          } else if (error === "role_assignment_failed") {
+            message =
+              "Authentication successful, but role assignment failed. Please contact support.";
+          }
+          showMessage(message, "error");
+        } else if (success) {
+          let message = "Authentication successful!";
+          if (role) {
+            message += ` You have been registered as a ${role.toLowerCase()}.`;
+          }
+          showMessage(message, "success");
+        }
+      });
+
+      // Alternative API-based approach for role-specific registration
+      async function registerBorrowerWithGoogle() {
+        if (!validateRoleData()) return;
+
+        try {
+          const response = await fetch(
+            "http://localhost:7000/auth/google/borrower",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                monthlyIncome: parseFloat(
+                  document.getElementById("monthlyIncome").value
+                ),
+                employmentStatus:
+                  document.getElementById("employmentStatus").value,
+              }),
+            }
+          );
+
+          if (response.redirected) {
+            window.location.href = response.url;
+          } else {
+            const data = await response.json();
+            if (!data.success) {
+              showMessage(data.message, "error");
+            }
+          }
+        } catch (error) {
+          showMessage("An error occurred. Please try again.", "error");
+        }
+      }
+
+      async function registerLenderWithGoogle() {
+        if (!validateRoleData()) return;
+
+        try {
+          const response = await fetch(
+            "http://localhost:7000/auth/google/lender",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                lendingCapacity: parseFloat(
+                  document.getElementById("lendingCapacity").value
+                ),
+                interestRatePersonal: parseFloat(
+                  document.getElementById("interestRatePersonal").value
+                ),
+              }),
+            }
+          );
+
+          if (response.redirected) {
+            window.location.href = response.url;
+          } else {
+            const data = await response.json();
+            if (!data.success) {
+              showMessage(data.message, "error");
+            }
+          }
+        } catch (error) {
+          showMessage("An error occurred. Please try again.", "error");
+        }
+      }
+    </script>
+  </body>
+</html>

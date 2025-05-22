@@ -183,18 +183,18 @@ AuthRouter.get("/refresh-token", RefreshToken);
  */
 AuthRouter.get("/profile", Authenticated, GetUserProfile);
 
-/**
- * @swagger
- * /auth/google:
- *   get:
- *     summary: Authenticate with Google
- *     tags: [OAuth]
- *     description: Redirects to Google OAuth login page
- *     responses:
- *       302:
- *         description: Redirect to Google authentication
- */
-AuthRouter.get("/google", googleAuth);
+// /**
+//  * @swagger
+//  * /auth/google:
+//  *   get:
+//  *     summary: Authenticate with Google
+//  *     tags: [OAuth]
+//  *     description: Redirects to Google OAuth login page
+//  *     responses:
+//  *       302:
+//  *         description: Redirect to Google authentication
+//  */
+// AuthRouter.get("/google", googleAuth);
 
 /**
  * @swagger
@@ -215,18 +215,18 @@ AuthRouter.get("/google", googleAuth);
  */
 AuthRouter.get("/google/callback", googleAuthCallback, GoogleCallback);
 
-/**
- * @swagger
- * /auth/facebook:
- *   get:
- *     summary: Authenticate with Facebook
- *     tags: [OAuth]
- *     description: Redirects to Facebook OAuth login page
- *     responses:
- *       302:
- *         description: Redirect to Facebook authentication
- */
-AuthRouter.get("/facebook", facebookAuth);
+// /**
+//  * @swagger
+//  * /auth/facebook:
+//  *   get:
+//  *     summary: Authenticate with Facebook
+//  *     tags: [OAuth]
+//  *     description: Redirects to Facebook OAuth login page
+//  *     responses:
+//  *       302:
+//  *         description: Redirect to Facebook authentication
+//  */
+// AuthRouter.get("/facebook", facebookAuth);
 
 /**
  * @swagger
@@ -405,4 +405,281 @@ AuthRouter.delete("/role/:roleName", Authenticated, async (req, res, next) => {
 //   RoleRouter
 // );
 
+// Updated sections for src/routes/authRoutes.js
+
+// Add these new route definitions to your existing authRoutes.js file
+
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Authenticate with Google (with optional role)
+ *     tags: [OAuth]
+ *     description: Redirects to Google OAuth login page with optional role selection
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [BORROWER, LENDER, USER]
+ *         description: Role to assign after successful authentication
+ *       - in: query
+ *         name: monthlyIncome
+ *         schema:
+ *           type: number
+ *         description: Required for BORROWER role - Monthly income amount
+ *       - in: query
+ *         name: employmentStatus
+ *         schema:
+ *           type: string
+ *           enum: [employed, self-employed, unemployed, retired, student]
+ *         description: Required for BORROWER role - Employment status
+ *       - in: query
+ *         name: lendingCapacity
+ *         schema:
+ *           type: number
+ *         description: Required for LENDER role - Maximum lending capacity
+ *       - in: query
+ *         name: interestRatePersonal
+ *         schema:
+ *           type: number
+ *         description: Required for LENDER role - Base interest rate for personal loans
+ *     responses:
+ *       302:
+ *         description: Redirect to Google authentication
+ */
+AuthRouter.get("/google", googleAuth);
+
+/**
+ * @swagger
+ * /auth/facebook:
+ *   get:
+ *     summary: Authenticate with Facebook (with optional role)
+ *     tags: [OAuth]
+ *     description: Redirects to Facebook OAuth login page with optional role selection
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [BORROWER, LENDER, USER]
+ *         description: Role to assign after successful authentication
+ *       - in: query
+ *         name: monthlyIncome
+ *         schema:
+ *           type: number
+ *         description: Required for BORROWER role - Monthly income amount
+ *       - in: query
+ *         name: employmentStatus
+ *         schema:
+ *           type: string
+ *           enum: [employed, self-employed, unemployed, retired, student]
+ *         description: Required for BORROWER role - Employment status
+ *       - in: query
+ *         name: lendingCapacity
+ *         schema:
+ *           type: number
+ *         description: Required for LENDER role - Maximum lending capacity
+ *       - in: query
+ *         name: interestRatePersonal
+ *         schema:
+ *           type: number
+ *         description: Required for LENDER role - Base interest rate for personal loans
+ *     responses:
+ *       302:
+ *         description: Redirect to Facebook authentication
+ */
+AuthRouter.get("/facebook", facebookAuth);
+
+// Add these additional utility routes for role-based OAuth
+
+/**
+ * @swagger
+ * /auth/google/borrower:
+ *   post:
+ *     summary: Register as borrower via Google OAuth
+ *     tags: [OAuth, Roles]
+ *     description: Redirects to Google OAuth with borrower role pre-selected
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - monthlyIncome
+ *               - employmentStatus
+ *             properties:
+ *               monthlyIncome:
+ *                 type: number
+ *                 description: Monthly income amount
+ *               employmentStatus:
+ *                 type: string
+ *                 enum: [employed, self-employed, unemployed, retired, student]
+ *                 description: Current employment status
+ *     responses:
+ *       302:
+ *         description: Redirect to Google authentication with borrower role
+ */
+AuthRouter.post("/google/borrower", (req, res) => {
+  const { monthlyIncome, employmentStatus } = req.body;
+
+  if (!monthlyIncome || !employmentStatus) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Monthly income and employment status are required for borrower registration",
+    });
+  }
+
+  const params = new URLSearchParams({
+    role: ROLE_TYPES.BORROWER,
+    monthlyIncome: monthlyIncome.toString(),
+    employmentStatus,
+  });
+
+  res.redirect(`/auth/google?${params.toString()}`);
+});
+
+/**
+ * @swagger
+ * /auth/google/lender:
+ *   post:
+ *     summary: Register as lender via Google OAuth
+ *     tags: [OAuth, Roles]
+ *     description: Redirects to Google OAuth with lender role pre-selected
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - lendingCapacity
+ *               - interestRatePersonal
+ *             properties:
+ *               lendingCapacity:
+ *                 type: number
+ *                 description: Maximum lending capacity
+ *               interestRatePersonal:
+ *                 type: number
+ *                 description: Base interest rate for personal loans
+ *     responses:
+ *       302:
+ *         description: Redirect to Google authentication with lender role
+ */
+AuthRouter.post("/google/lender", (req, res) => {
+  const { lendingCapacity, interestRatePersonal } = req.body;
+
+  if (!lendingCapacity || !interestRatePersonal) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Lending capacity and interest rate are required for lender registration",
+    });
+  }
+
+  const params = new URLSearchParams({
+    role: ROLE_TYPES.LENDER,
+    lendingCapacity: lendingCapacity.toString(),
+    interestRatePersonal: interestRatePersonal.toString(),
+  });
+
+  res.redirect(`/auth/google?${params.toString()}`);
+});
+
+/**
+ * @swagger
+ * /auth/facebook/borrower:
+ *   post:
+ *     summary: Register as borrower via Facebook OAuth
+ *     tags: [OAuth, Roles]
+ *     description: Redirects to Facebook OAuth with borrower role pre-selected
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - monthlyIncome
+ *               - employmentStatus
+ *             properties:
+ *               monthlyIncome:
+ *                 type: number
+ *                 description: Monthly income amount
+ *               employmentStatus:
+ *                 type: string
+ *                 enum: [employed, self-employed, unemployed, retired, student]
+ *                 description: Current employment status
+ *     responses:
+ *       302:
+ *         description: Redirect to Facebook authentication with borrower role
+ */
+AuthRouter.post("/facebook/borrower", (req, res) => {
+  const { monthlyIncome, employmentStatus } = req.body;
+
+  if (!monthlyIncome || !employmentStatus) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Monthly income and employment status are required for borrower registration",
+    });
+  }
+
+  const params = new URLSearchParams({
+    role: ROLE_TYPES.BORROWER,
+    monthlyIncome: monthlyIncome.toString(),
+    employmentStatus,
+  });
+
+  res.redirect(`/auth/facebook?${params.toString()}`);
+});
+
+/**
+ * @swagger
+ * /auth/facebook/lender:
+ *   post:
+ *     summary: Register as lender via Facebook OAuth
+ *     tags: [OAuth, Roles]
+ *     description: Redirects to Facebook OAuth with lender role pre-selected
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - lendingCapacity
+ *               - interestRatePersonal
+ *             properties:
+ *               lendingCapacity:
+ *                 type: number
+ *                 description: Maximum lending capacity
+ *               interestRatePersonal:
+ *                 type: number
+ *                 description: Base interest rate for personal loans
+ *     responses:
+ *       302:
+ *         description: Redirect to Facebook authentication with lender role
+ */
+AuthRouter.post("/facebook/lender", (req, res) => {
+  const { lendingCapacity, interestRatePersonal } = req.body;
+
+  if (!lendingCapacity || !interestRatePersonal) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Lending capacity and interest rate are required for lender registration",
+    });
+  }
+
+  const params = new URLSearchParams({
+    role: ROLE_TYPES.LENDER,
+    lendingCapacity: lendingCapacity.toString(),
+    interestRatePersonal: interestRatePersonal.toString(),
+  });
+
+  res.redirect(`/auth/facebook?${params.toString()}`);
+});
 export default AuthRouter;
