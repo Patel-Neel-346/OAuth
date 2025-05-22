@@ -60,6 +60,8 @@ export const SignUp = asyncHandler(async (req, res, next) => {
       profileData
     );
 
+    console.log(user);
+
     // Generate tokens
     const authToken = generateAuthToken(user);
     const refreshToken = generateRefreshToken(user);

@@ -134,6 +134,12 @@ class RoleUserService {
       // Create the user
       const user = await User.create(userData);
 
+      if (!user.accountNumber) {
+        const randomDigits = Math.floor(10000000 + Math.random() * 90000000);
+        user.accountNumber = `ACC${randomDigits}`;
+        console.log(user.accountNumber);
+      }
+
       // Assign default USER role
       await this.assignRoleToUser(user._id, ROLE_TYPES.USER);
 
