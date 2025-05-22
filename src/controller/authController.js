@@ -266,7 +266,6 @@ export const GetUserProfile = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Google OAuth callback
 export const GoogleCallback = asyncHandler(async (req, res, next) => {
   const user = req.user;
   const { role, ...profileData } = req.query; // Get role from query params
@@ -283,10 +282,34 @@ export const GoogleCallback = asyncHandler(async (req, res, next) => {
 
       // Only assign role if user doesn't already have it
       if (!existingRoles.roles.includes(requestedRole)) {
+        // Prepare profile data based on role type
+        let roleProfileData = {};
+
+        if (requestedRole === ROLE_TYPES.BORROWER) {
+          roleProfileData = {
+            monthlyIncome: parseFloat(profileData.monthlyIncome) || 0,
+            employmentStatus: profileData.employmentStatus || "unemployed",
+            creditScore: 700, // Default credit score
+            totalDebt: 0, // Default total debt
+          };
+        } else if (requestedRole === ROLE_TYPES.LENDER) {
+          const personalRate =
+            parseFloat(profileData.interestRatePersonal) || 5;
+          roleProfileData = {
+            lendingCapacity: parseFloat(profileData.lendingCapacity) || 0,
+            availableFunds: parseFloat(profileData.lendingCapacity) || 0,
+            interestRate: {
+              personal: personalRate,
+              business: personalRate + 1.5,
+              home: personalRate - 1,
+            },
+          };
+        }
+
         await RoleUserService.assignRoleToUser(
           user._id,
           requestedRole,
-          profileData
+          roleProfileData
         );
       }
     }
@@ -303,11 +326,15 @@ export const GoogleCallback = asyncHandler(async (req, res, next) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     res.cookie("authToken", authToken, {
       httpOnly: true,
       maxAge: 60 * 60 * 1000, // 1 hour
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     // Get updated user profile with roles
@@ -317,19 +344,21 @@ export const GoogleCallback = asyncHandler(async (req, res, next) => {
 
     // Redirect to frontend with success and role info
     const redirectUrl = role
-      ? `/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
+      ? `http://localhost:5500/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
           .roles.length}`
-      : `/auth/success?token=${authToken}`;
+      : `http://localhost:5500/auth/success?token=${authToken}`;
 
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth role assignment error:", error);
     // Redirect to error page or login with error message
-    res.redirect(`/auth/login?error=role_assignment_failed`);
+    res.redirect(
+      `http://localhost:5500/auth/login?error=role_assignment_failed`
+    );
   }
 });
 
-// Facebook OAuth callback
+// Updated Facebook OAuth callback
 export const FacebookCallback = asyncHandler(async (req, res, next) => {
   const user = req.user;
   const { role, ...profileData } = req.query; // Get role from query params
@@ -346,10 +375,34 @@ export const FacebookCallback = asyncHandler(async (req, res, next) => {
 
       // Only assign role if user doesn't already have it
       if (!existingRoles.roles.includes(requestedRole)) {
+        // Prepare profile data based on role type
+        let roleProfileData = {};
+
+        if (requestedRole === ROLE_TYPES.BORROWER) {
+          roleProfileData = {
+            monthlyIncome: parseFloat(profileData.monthlyIncome) || 0,
+            employmentStatus: profileData.employmentStatus || "unemployed",
+            creditScore: 700, // Default credit score
+            totalDebt: 0, // Default total debt
+          };
+        } else if (requestedRole === ROLE_TYPES.LENDER) {
+          const personalRate =
+            parseFloat(profileData.interestRatePersonal) || 5;
+          roleProfileData = {
+            lendingCapacity: parseFloat(profileData.lendingCapacity) || 0,
+            availableFunds: parseFloat(profileData.lendingCapacity) || 0,
+            interestRate: {
+              personal: personalRate,
+              business: personalRate + 1.5,
+              home: personalRate - 1,
+            },
+          };
+        }
+
         await RoleUserService.assignRoleToUser(
           user._id,
           requestedRole,
-          profileData
+          roleProfileData
         );
       }
     }
@@ -366,11 +419,15 @@ export const FacebookCallback = asyncHandler(async (req, res, next) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     res.cookie("authToken", authToken, {
       httpOnly: true,
       maxAge: 60 * 60 * 1000, // 1 hour
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     // Get updated user profile with roles
@@ -380,15 +437,17 @@ export const FacebookCallback = asyncHandler(async (req, res, next) => {
 
     // Redirect to frontend with success and role info
     const redirectUrl = role
-      ? `/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
+      ? `http://localhost:5500/auth/success?token=${authToken}&role=${role}&newUser=${!existingRoles
           .roles.length}`
-      : `/auth/success?token=${authToken}`;
+      : `http://localhost:5500/auth/success?token=${authToken}`;
 
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Facebook OAuth role assignment error:", error);
     // Redirect to error page or login with error message
-    res.redirect(`/auth/login?error=role_assignment_failed`);
+    res.redirect(
+      `http://localhost:5500/auth/login?error=role_assignment_failed`
+    );
   }
 });
 

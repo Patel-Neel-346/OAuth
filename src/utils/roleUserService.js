@@ -57,6 +57,11 @@ class RoleUserService {
 
   static async assignRoleToUser(userId, roleName, profileData = {}) {
     try {
+      console.log(
+        `Assigning role ${roleName} to user ${userId} with profile data:`,
+        profileData
+      );
+
       // Validate role name
       if (!Object.values(ROLE_TYPES).includes(roleName)) {
         throw new ApiError(400, "Invalid role type");
@@ -76,7 +81,8 @@ class RoleUserService {
 
       // Check if user already has this role
       if (role.users.includes(userId)) {
-        throw new ApiError(400, `User already has the ${roleName} role`);
+        console.log(`User already has the ${roleName} role`);
+        return { role, profile: null };
       }
 
       // Add user to role
@@ -90,28 +96,38 @@ class RoleUserService {
         roleName === ROLE_TYPES.BORROWER &&
         Object.keys(profileData).length > 0
       ) {
+        console.log("Creating borrower profile with data:", profileData);
         roleProfile = await BorrowerProfile.create({
           roleId: role._id,
           ...profileData,
         });
+        console.log("Created borrower profile:", roleProfile);
       } else if (
         roleName === ROLE_TYPES.LENDER &&
         Object.keys(profileData).length > 0
       ) {
+        console.log("Creating lender profile with data:", profileData);
         roleProfile = await LenderProfile.create({
           roleId: role._id,
           ...profileData,
         });
+        console.log("Created lender profile:", roleProfile);
       }
 
       return { role, profile: roleProfile };
     } catch (error) {
+      console.error("Error in assignRoleToUser:", error);
       throw error;
     }
   }
 
   static async registerUserWithRole(userData, roleName, profileData = {}) {
     try {
+      console.log(
+        `Registering user with role: ${roleName} and profile data:`,
+        profileData
+      );
+
       // Create the user
       const user = await User.create(userData);
 
@@ -119,19 +135,22 @@ class RoleUserService {
       if (!user.accountNumber) {
         const randomDigits = Math.floor(10000000 + Math.random() * 90000000);
         user.accountNumber = `ACC${randomDigits}`;
-        console.log(user.accountNumber);
+        await user.save(); // Save the account number
+        console.log("Generated account number:", user.accountNumber);
       }
 
-      // Assign default USER role
+      // Assign default USER role first
       await this.assignRoleToUser(user._id, ROLE_TYPES.USER);
 
       // If additional role is specified, assign that as well
       if (roleName && roleName !== ROLE_TYPES.USER) {
+        console.log(`Assigning additional role: ${roleName}`);
         await this.assignRoleToUser(user._id, roleName, profileData);
       }
 
       return user;
     } catch (error) {
+      console.error("Error in registerUserWithRole:", error);
       // If there was an error, try to delete the partially created user
       if (error.code !== 11000) {
         const user = await User.findOne({ email: userData.email });

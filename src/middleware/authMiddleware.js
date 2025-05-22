@@ -30,7 +30,6 @@ export const Authenticated = (req, res, next) => {
 
 export const jwtAuth = passport.authenticate("jwt", { session: false });
 
-// Enhanced Google OAuth middleware with role support
 export const googleAuth = (req, res, next) => {
   // Extract role and profile data from query params and store in session
   const {
@@ -40,6 +39,8 @@ export const googleAuth = (req, res, next) => {
     lendingCapacity,
     interestRatePersonal,
   } = req.query;
+
+  console.log("Google Auth - Query params:", req.query); // Debug log
 
   // Store role selection in session for later use in callback
   if (role && Object.values(ROLE_TYPES).includes(role.toUpperCase())) {
@@ -54,6 +55,11 @@ export const googleAuth = (req, res, next) => {
         ? parseFloat(interestRatePersonal)
         : undefined,
     };
+
+    console.log("Stored in session:", {
+      role: req.session.oauthRole,
+      profileData: req.session.oauthProfileData,
+    }); // Debug log
   }
 
   return passport.authenticate("google", {
@@ -63,10 +69,18 @@ export const googleAuth = (req, res, next) => {
 
 export const googleAuthCallback = (req, res, next) => {
   return passport.authenticate("google", {
-    failureRedirect: "/auth/login?error=oauth_failed",
+    failureRedirect: "http://localhost:7000/auth/login?error=oauth_failed",
     session: false,
   })(req, res, (err) => {
-    if (err) return next(err);
+    if (err) {
+      console.error("Google OAuth error:", err);
+      return next(err);
+    }
+
+    console.log("Google callback - Session data:", {
+      oauthRole: req.session.oauthRole,
+      oauthProfileData: req.session.oauthProfileData,
+    }); // Debug log
 
     // Transfer role data from session to query for callback handler
     if (req.session.oauthRole) {
@@ -78,20 +92,14 @@ export const googleAuthCallback = (req, res, next) => {
           req.session.oauthProfileData?.monthlyIncome || 0;
         req.query.employmentStatus =
           req.session.oauthProfileData?.employmentStatus || "unemployed";
-        req.query.creditScore = 700; // Default credit score
-        req.query.totalDebt = 0; // Default total debt
       } else if (req.session.oauthRole === ROLE_TYPES.LENDER) {
         req.query.lendingCapacity =
           req.session.oauthProfileData?.lendingCapacity || 0;
-        req.query.availableFunds =
-          req.session.oauthProfileData?.lendingCapacity || 0;
         req.query.interestRatePersonal =
           req.session.oauthProfileData?.interestRatePersonal || 5;
-        req.query.interestRateBusiness =
-          (req.session.oauthProfileData?.interestRatePersonal || 5) + 1.5;
-        req.query.interestRateHome =
-          (req.session.oauthProfileData?.interestRatePersonal || 5) - 1;
       }
+
+      console.log("Transferred to query:", req.query); // Debug log
 
       // Clean up session
       delete req.session.oauthRole;
@@ -113,6 +121,8 @@ export const facebookAuth = (req, res, next) => {
     interestRatePersonal,
   } = req.query;
 
+  console.log("Facebook Auth - Query params:", req.query); // Debug log
+
   // Store role selection in session for later use in callback
   if (role && Object.values(ROLE_TYPES).includes(role.toUpperCase())) {
     req.session.oauthRole = role.toUpperCase();
@@ -126,6 +136,11 @@ export const facebookAuth = (req, res, next) => {
         ? parseFloat(interestRatePersonal)
         : undefined,
     };
+
+    console.log("Stored in session:", {
+      role: req.session.oauthRole,
+      profileData: req.session.oauthProfileData,
+    }); // Debug log
   }
 
   return passport.authenticate("facebook", {
@@ -135,10 +150,18 @@ export const facebookAuth = (req, res, next) => {
 
 export const facebookAuthCallback = (req, res, next) => {
   return passport.authenticate("facebook", {
-    failureRedirect: "/auth/login?error=oauth_failed",
+    failureRedirect: "http://localhost:7000/auth/login?error=oauth_failed",
     session: false,
   })(req, res, (err) => {
-    if (err) return next(err);
+    if (err) {
+      console.error("Facebook OAuth error:", err);
+      return next(err);
+    }
+
+    console.log("Facebook callback - Session data:", {
+      oauthRole: req.session.oauthRole,
+      oauthProfileData: req.session.oauthProfileData,
+    }); // Debug log
 
     // Transfer role data from session to query for callback handler
     if (req.session.oauthRole) {
@@ -150,20 +173,14 @@ export const facebookAuthCallback = (req, res, next) => {
           req.session.oauthProfileData?.monthlyIncome || 0;
         req.query.employmentStatus =
           req.session.oauthProfileData?.employmentStatus || "unemployed";
-        req.query.creditScore = 700; // Default credit score
-        req.query.totalDebt = 0; // Default total debt
       } else if (req.session.oauthRole === ROLE_TYPES.LENDER) {
         req.query.lendingCapacity =
           req.session.oauthProfileData?.lendingCapacity || 0;
-        req.query.availableFunds =
-          req.session.oauthProfileData?.lendingCapacity || 0;
         req.query.interestRatePersonal =
           req.session.oauthProfileData?.interestRatePersonal || 5;
-        req.query.interestRateBusiness =
-          (req.session.oauthProfileData?.interestRatePersonal || 5) + 1.5;
-        req.query.interestRateHome =
-          (req.session.oauthProfileData?.interestRatePersonal || 5) - 1;
       }
+
+      console.log("Transferred to query:", req.query); // Debug log
 
       // Clean up session
       delete req.session.oauthRole;
