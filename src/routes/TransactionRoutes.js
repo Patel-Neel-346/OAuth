@@ -17,6 +17,10 @@ import {
 import { Authenticated } from "../middleware/authMiddleware.js";
 import { body, param, query, validationResult } from "express-validator";
 import { ApiError } from "../helpers/ApiError.js";
+import {
+  DepositFunds,
+  WithDrawFunds,
+} from "../controller/TransactionControllerV2.js";
 
 const TransactionRouter = express.Router();
 
@@ -247,9 +251,11 @@ const transactionHistoryValidation = [
 TransactionRouter.post(
   "/deposit",
   Authenticated,
-  depositValidation,
-  handleValidationErrors,
-  depositFunds
+  // depositValidation,
+  // handleValidationErrors,
+  // depositFunds
+
+  DepositFunds
 );
 
 /**
@@ -296,9 +302,10 @@ TransactionRouter.post(
 TransactionRouter.post(
   "/withdraw",
   Authenticated,
-  withdrawalValidation,
-  handleValidationErrors,
-  withdrawFunds
+  // withdrawalValidation,
+  // handleValidationErrors,
+  // withdrawFunds
+  WithDrawFunds
 );
 
 /**
