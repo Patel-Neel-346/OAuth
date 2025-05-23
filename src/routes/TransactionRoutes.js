@@ -254,9 +254,9 @@ TransactionRouter.post(
   Authenticated,
   // depositValidation,
   // handleValidationErrors,
-  // depositFunds
+  depositFunds
 
-  DepositFunds
+  // DepositFunds
 );
 
 /**
@@ -305,8 +305,8 @@ TransactionRouter.post(
   Authenticated,
   // withdrawalValidation,
   // handleValidationErrors,
-  // withdrawFunds
-  WithDrawFunds
+  withdrawFunds
+  // WithDrawFunds
 );
 
 /**
@@ -382,8 +382,8 @@ TransactionRouter.post(
   Authenticated,
   // transferValidation,
   // handleValidationErrors,
-  // transferFunds
-  TransferFunds
+  transferFunds
+  // TransferFunds
 );
 
 /**

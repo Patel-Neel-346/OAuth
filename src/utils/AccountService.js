@@ -721,7 +721,7 @@ class TransactionService {
                       {
                         $eq: [
                           "$fromAccount",
-                          mongoose.Types.ObjectId(accountId),
+                          new mongoose.Types.ObjectId(accountId),
                         ],
                       },
                     ],
@@ -740,7 +740,7 @@ class TransactionService {
                       {
                         $eq: [
                           "$fromAccount",
-                          mongoose.Types.ObjectId(accountId),
+                          new mongoose.Types.ObjectId(accountId),
                         ],
                       },
                     ],
@@ -757,7 +757,10 @@ class TransactionService {
                     $and: [
                       { $eq: ["$type", "transfer"] },
                       {
-                        $eq: ["$toAccount", mongoose.Types.ObjectId(accountId)],
+                        $eq: [
+                          "$toAccount",
+                          new mongoose.Types.ObjectId(accountId),
+                        ],
                       },
                     ],
                   },
@@ -773,7 +776,10 @@ class TransactionService {
                     $and: [
                       { $eq: ["$type", "interest"] },
                       {
-                        $eq: ["$toAccount", mongoose.Types.ObjectId(accountId)],
+                        $eq: [
+                          "$toAccount",
+                          new mongoose.Types.ObjectId(accountId),
+                        ],
                       },
                     ],
                   },
@@ -791,7 +797,7 @@ class TransactionService {
                       {
                         $eq: [
                           "$fromAccount",
-                          mongoose.Types.ObjectId(accountId),
+                          new mongoose.Types.ObjectId(accountId),
                         ],
                       },
                     ],

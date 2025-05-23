@@ -153,6 +153,68 @@ export const GetAccountBalance = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const GetTransactionHistory = asyncHandler(async (req, res, next) => {});
+export const GetTransactionHistory = asyncHandler(async (req, res, next) => {
+  const { accountNumber } = req.body || req.params;
+  const {
+    type,
+    status,
+    dateFrom,
+    dateTo,
+    amountMin,
+    amountMax,
+    page = 1,
+    limit = 10,
+  } = req.query;
+
+  const userId = req.user;
+
+  try {
+    const account = await Account.findOne({ accountNumber, userId });
+
+    if (!account) {
+      return next(new ApiError(400, "Account does not exisits"));
+    }
+
+    //build filter man
+    const filter = {
+      type,
+      status,
+      dateFrom,
+      dateTo,
+      amountMin,
+      amountMax,
+    };
+
+    //remove undefined Values from Filter :-:
+
+    Object.keys(filter).forEach((key) => {
+      if (filter[key] === undefined) {
+        delete filter[key];
+      }
+    });
+
+    const result = await TransactionServiceV2.GetTransactionHistoryFromServices(
+      account._id.toString(),
+      filter,
+      page,
+      limit
+    );
+
+    console.log(result);
+
+    return res
+      .status(200)
+      .json(
+        new ApiRes(
+          200,
+          result,
+          "SuccessFully Retrived Transaction Histroy Of Your bank account :)"
+        )
+      );
+  } catch (error) {
+    console.log("Transaction history error in controller");
+    return next(new ApiError(500, `Trasaction Error:${error.message}`));
+  }
+});
 
 export const TransactionSummary = asyncHandler(async (req, res, next) => {});
