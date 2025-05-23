@@ -19,17 +19,13 @@ class TransactionService {
     description = "Deposit",
     metadata = {}
   ) {
-    const session = await mongoose.startSession();
-
     try {
-      session.startTransaction();
-
       if (amount <= 0) {
         throw new ApiError(400, "Deposit amount must be greater than zero");
       }
 
       // Find and validate account
-      const account = await Account.findById(accountId).session(session);
+      const account = await Account.findById(accountId);
       if (!account) {
         throw new ApiError(404, "Account not found");
       }
@@ -39,34 +35,29 @@ class TransactionService {
       }
 
       // Create transaction record
-      const transaction = await Transaction.create(
-        [
-          {
-            toAccount: accountId,
-            amount,
-            type: "deposit",
-            description,
-            status: "pending",
-            reference: `DEP${Date.now()}${Math.floor(Math.random() * 1000)}`,
-            metadata,
-          },
-        ],
-        { session }
-      );
+      const transaction = new Transaction({
+        toAccount: accountId,
+        amount,
+        type: "deposit",
+        description,
+        status: "pending",
+        reference: `DEP${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        metadata,
+      });
+
+      await transaction.save();
 
       // Update account balance
       account.balance += amount;
-      await account.save({ session });
+      await account.save();
 
       // Mark transaction as completed
-      transaction[0].status = "completed";
-      transaction[0].processedAt = new Date();
-      await transaction[0].save({ session });
-
-      await session.commitTransaction();
+      transaction.status = "completed";
+      transaction.processedAt = new Date();
+      await transaction.save();
 
       return {
-        transaction: transaction[0],
+        transaction,
         account: {
           accountNumber: account.accountNumber,
           newBalance: account.balance,
@@ -74,10 +65,7 @@ class TransactionService {
         },
       };
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -95,17 +83,13 @@ class TransactionService {
     description = "Withdrawal",
     metadata = {}
   ) {
-    const session = await mongoose.startSession();
-
     try {
-      session.startTransaction();
-
       if (amount <= 0) {
         throw new ApiError(400, "Withdrawal amount must be greater than zero");
       }
 
       // Find and validate account
-      const account = await Account.findById(accountId).session(session);
+      const account = await Account.findById(accountId);
       if (!account) {
         throw new ApiError(404, "Account not found");
       }
@@ -132,34 +116,29 @@ class TransactionService {
       }
 
       // Create transaction record
-      const transaction = await Transaction.create(
-        [
-          {
-            fromAccount: accountId,
-            amount,
-            type: "withdrawal",
-            description,
-            status: "pending",
-            reference: `WTH${Date.now()}${Math.floor(Math.random() * 1000)}`,
-            metadata,
-          },
-        ],
-        { session }
-      );
+      const transaction = new Transaction({
+        fromAccount: accountId,
+        amount,
+        type: "withdrawal",
+        description,
+        status: "pending",
+        reference: `WTH${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        metadata,
+      });
+
+      await transaction.save();
 
       // Update account balance
       account.balance -= amount;
-      await account.save({ session });
+      await account.save();
 
       // Mark transaction as completed
-      transaction[0].status = "completed";
-      transaction[0].processedAt = new Date();
-      await transaction[0].save({ session });
-
-      await session.commitTransaction();
+      transaction.status = "completed";
+      transaction.processedAt = new Date();
+      await transaction.save();
 
       return {
-        transaction: transaction[0],
+        transaction,
         account: {
           accountNumber: account.accountNumber,
           newBalance: account.balance,
@@ -167,10 +146,7 @@ class TransactionService {
         },
       };
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -190,11 +166,7 @@ class TransactionService {
     description = "Transfer",
     metadata = {}
   ) {
-    const session = await mongoose.startSession();
-
     try {
-      session.startTransaction();
-
       if (amount <= 0) {
         throw new ApiError(400, "Transfer amount must be greater than zero");
       }
@@ -205,8 +177,8 @@ class TransactionService {
 
       // Find and validate both accounts
       const [fromAccount, toAccount] = await Promise.all([
-        Account.findById(fromAccountId).session(session),
-        Account.findById(toAccountId).session(session),
+        Account.findById(fromAccountId),
+        Account.findById(toAccountId),
       ]);
 
       if (!fromAccount) {
@@ -266,62 +238,51 @@ class TransactionService {
       }
 
       // Create transaction record
-      const transaction = await Transaction.create(
-        [
-          {
-            fromAccount: fromAccountId,
-            toAccount: toAccountId,
-            amount,
-            type: "transfer",
-            description,
-            status: "pending",
-            reference: `TRF${Date.now()}${Math.floor(Math.random() * 1000)}`,
-            metadata: {
-              ...metadata,
-              transferFee,
-              totalDeduction,
-            },
-          },
-        ],
-        { session }
-      );
+      const transaction = new Transaction({
+        fromAccount: fromAccountId,
+        toAccount: toAccountId,
+        amount,
+        type: "transfer",
+        description,
+        status: "pending",
+        reference: `TRF${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        metadata: {
+          ...metadata,
+          transferFee,
+          totalDeduction,
+        },
+      });
+
+      await transaction.save();
 
       // Update account balances
       fromAccount.balance -= totalDeduction;
       toAccount.balance += amount;
 
-      await Promise.all([
-        fromAccount.save({ session }),
-        toAccount.save({ session }),
-      ]);
+      await Promise.all([fromAccount.save(), toAccount.save()]);
 
       // Create fee transaction if there's a fee
       if (transferFee > 0) {
-        await Transaction.create(
-          [
-            {
-              fromAccount: fromAccountId,
-              amount: transferFee,
-              type: "fee",
-              description: "Transfer fee",
-              status: "completed",
-              reference: `FEE${Date.now()}${Math.floor(Math.random() * 1000)}`,
-              metadata: { relatedTransactionId: transaction[0]._id },
-            },
-          ],
-          { session }
-        );
+        const feeTransaction = new Transaction({
+          fromAccount: fromAccountId,
+          amount: transferFee,
+          type: "fee",
+          description: "Transfer fee",
+          status: "completed",
+          reference: `FEE${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          processedAt: new Date(),
+          metadata: { relatedTransactionId: transaction._id },
+        });
+        await feeTransaction.save();
       }
 
       // Mark transaction as completed
-      transaction[0].status = "completed";
-      transaction[0].processedAt = new Date();
-      await transaction[0].save({ session });
-
-      await session.commitTransaction();
+      transaction.status = "completed";
+      transaction.processedAt = new Date();
+      await transaction.save();
 
       return {
-        transaction: transaction[0],
+        transaction,
         fromAccount: {
           accountNumber: fromAccount.accountNumber,
           newBalance: fromAccount.balance,
@@ -335,10 +296,7 @@ class TransactionService {
         transferFee: transferFee > 0 ? transferFee : null,
       };
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -474,12 +432,8 @@ class TransactionService {
    * @returns {object} Interest transaction result
    */
   static async processInterestPayment(accountId) {
-    const session = await mongoose.startSession();
-
     try {
-      session.startTransaction();
-
-      const account = await Account.findById(accountId).session(session);
+      const account = await Account.findById(accountId);
       if (!account) {
         throw new ApiError(404, "Account not found");
       }
@@ -507,33 +461,28 @@ class TransactionService {
       }
 
       // Create interest transaction
-      const transaction = await Transaction.create(
-        [
-          {
-            toAccount: accountId,
-            amount: parseFloat(interestAmount.toFixed(2)),
-            type: "interest",
-            description: `Monthly interest payment at ${account.interestRate}% APR`,
-            status: "completed",
-            reference: `INT${Date.now()}${Math.floor(Math.random() * 1000)}`,
-            processedAt: new Date(),
-            metadata: {
-              interestRate: account.interestRate,
-              principalAmount: account.balance,
-            },
-          },
-        ],
-        { session }
-      );
+      const transaction = new Transaction({
+        toAccount: accountId,
+        amount: parseFloat(interestAmount.toFixed(2)),
+        type: "interest",
+        description: `Monthly interest payment at ${account.interestRate}% APR`,
+        status: "completed",
+        reference: `INT${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        processedAt: new Date(),
+        metadata: {
+          interestRate: account.interestRate,
+          principalAmount: account.balance,
+        },
+      });
+
+      await transaction.save();
 
       // Update account balance
       account.balance += parseFloat(interestAmount.toFixed(2));
-      await account.save({ session });
-
-      await session.commitTransaction();
+      await account.save();
 
       return {
-        transaction: transaction[0],
+        transaction,
         account: {
           accountNumber: account.accountNumber,
           newBalance: account.balance,
@@ -541,10 +490,7 @@ class TransactionService {
         },
       };
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -558,14 +504,8 @@ class TransactionService {
     transactionId,
     reason = "Transaction reversal"
   ) {
-    const session = await mongoose.startSession();
-
     try {
-      session.startTransaction();
-
-      const originalTransaction = await Transaction.findById(
-        transactionId
-      ).session(session);
+      const originalTransaction = await Transaction.findById(transactionId);
       if (!originalTransaction) {
         throw new ApiError(404, "Transaction not found");
       }
@@ -577,7 +517,7 @@ class TransactionService {
       // Check if already reversed
       const existingReversal = await Transaction.findOne({
         "metadata.reversedTransactionId": transactionId,
-      }).session(session);
+      });
 
       if (existingReversal) {
         throw new ApiError(400, "Transaction has already been reversed");
@@ -588,65 +528,55 @@ class TransactionService {
 
       if (originalTransaction.type === "deposit") {
         // Reverse deposit = withdrawal
-        const account = await Account.findById(
-          originalTransaction.toAccount
-        ).session(session);
+        const account = await Account.findById(originalTransaction.toAccount);
         if (account.balance < originalTransaction.amount) {
           throw new ApiError(400, "Insufficient funds to reverse deposit");
         }
 
         account.balance -= originalTransaction.amount;
-        await account.save({ session });
+        await account.save();
 
-        reversalTransaction = await Transaction.create(
-          [
-            {
-              fromAccount: originalTransaction.toAccount,
-              amount: originalTransaction.amount,
-              type: "withdrawal",
-              description: `Reversal: ${reason}`,
-              status: "completed",
-              reference: `REV${Date.now()}${Math.floor(Math.random() * 1000)}`,
-              processedAt: new Date(),
-              metadata: {
-                reversedTransactionId: transactionId,
-                reversalReason: reason,
-              },
-            },
-          ],
-          { session }
-        );
+        reversalTransaction = new Transaction({
+          fromAccount: originalTransaction.toAccount,
+          amount: originalTransaction.amount,
+          type: "withdrawal",
+          description: `Reversal: ${reason}`,
+          status: "completed",
+          reference: `REV${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          processedAt: new Date(),
+          metadata: {
+            reversedTransactionId: transactionId,
+            reversalReason: reason,
+          },
+        });
+
+        await reversalTransaction.save();
       } else if (originalTransaction.type === "withdrawal") {
         // Reverse withdrawal = deposit
-        const account = await Account.findById(
-          originalTransaction.fromAccount
-        ).session(session);
+        const account = await Account.findById(originalTransaction.fromAccount);
         account.balance += originalTransaction.amount;
-        await account.save({ session });
+        await account.save();
 
-        reversalTransaction = await Transaction.create(
-          [
-            {
-              toAccount: originalTransaction.fromAccount,
-              amount: originalTransaction.amount,
-              type: "deposit",
-              description: `Reversal: ${reason}`,
-              status: "completed",
-              reference: `REV${Date.now()}${Math.floor(Math.random() * 1000)}`,
-              processedAt: new Date(),
-              metadata: {
-                reversedTransactionId: transactionId,
-                reversalReason: reason,
-              },
-            },
-          ],
-          { session }
-        );
+        reversalTransaction = new Transaction({
+          toAccount: originalTransaction.fromAccount,
+          amount: originalTransaction.amount,
+          type: "deposit",
+          description: `Reversal: ${reason}`,
+          status: "completed",
+          reference: `REV${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          processedAt: new Date(),
+          metadata: {
+            reversedTransactionId: transactionId,
+            reversalReason: reason,
+          },
+        });
+
+        await reversalTransaction.save();
       } else if (originalTransaction.type === "transfer") {
         // Reverse transfer
         const [fromAccount, toAccount] = await Promise.all([
-          Account.findById(originalTransaction.fromAccount).session(session),
-          Account.findById(originalTransaction.toAccount).session(session),
+          Account.findById(originalTransaction.fromAccount),
+          Account.findById(originalTransaction.toAccount),
         ]);
 
         if (toAccount.balance < originalTransaction.amount) {
@@ -659,43 +589,32 @@ class TransactionService {
         fromAccount.balance += originalTransaction.amount;
         toAccount.balance -= originalTransaction.amount;
 
-        await Promise.all([
-          fromAccount.save({ session }),
-          toAccount.save({ session }),
-        ]);
+        await Promise.all([fromAccount.save(), toAccount.save()]);
 
-        reversalTransaction = await Transaction.create(
-          [
-            {
-              fromAccount: originalTransaction.toAccount,
-              toAccount: originalTransaction.fromAccount,
-              amount: originalTransaction.amount,
-              type: "transfer",
-              description: `Reversal: ${reason}`,
-              status: "completed",
-              reference: `REV${Date.now()}${Math.floor(Math.random() * 1000)}`,
-              processedAt: new Date(),
-              metadata: {
-                reversedTransactionId: transactionId,
-                reversalReason: reason,
-              },
-            },
-          ],
-          { session }
-        );
+        reversalTransaction = new Transaction({
+          fromAccount: originalTransaction.toAccount,
+          toAccount: originalTransaction.fromAccount,
+          amount: originalTransaction.amount,
+          type: "transfer",
+          description: `Reversal: ${reason}`,
+          status: "completed",
+          reference: `REV${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          processedAt: new Date(),
+          metadata: {
+            reversedTransactionId: transactionId,
+            reversalReason: reason,
+          },
+        });
+
+        await reversalTransaction.save();
       }
-
-      await session.commitTransaction();
 
       return {
         originalTransaction,
-        reversalTransaction: reversalTransaction[0],
+        reversalTransaction,
       };
     } catch (error) {
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
