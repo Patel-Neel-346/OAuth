@@ -1,9 +1,10 @@
 {
 	"info": {
-		"_postman_id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+		"_postman_id": "0d29a9ae-c25f-4bf5-8585-e625d07ac910",
 		"name": "Loan Management System API",
 		"description": "API test collection for the Loan Management System with role-based authentication",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "37897270"
 	},
 	"item": [
 		{
@@ -47,16 +48,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"name\": \"Regular User\",\n    \"email\": \"user@example.com\",\n    \"password\": \"Password123\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"register"
-							]
-						},
+						"url": "{{baseUrl}}/auth/register",
 						"description": "Register a new user with default USER role"
 					},
 					"response": []
@@ -94,16 +86,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"name\": \"Test Borrower\",\n    \"email\": \"borrower@example.com\",\n    \"password\": \"Password123\",\n    \"role\": \"borrower\",\n    \"monthlyIncome\": 5000,\n    \"employmentStatus\": \"employed\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"register"
-							]
-						},
+						"url": "{{baseUrl}}/auth/register",
 						"description": "Register a new borrower with borrower profile"
 					},
 					"response": []
@@ -141,16 +124,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"name\": \"Test Lender\",\n    \"email\": \"lender@example.com\",\n    \"password\": \"Password123\",\n    \"role\": \"lender\",\n    \"lendingCapacity\": 100000,\n    \"interestRatePersonal\": 5.5\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"register"
-							]
-						},
+						"url": "{{baseUrl}}/auth/register",
 						"description": "Register a new lender with lender profile"
 					},
 					"response": []
@@ -188,16 +162,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"name\": \"Admin User\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"AdminPassword123\",\n    \"role\": \"admin\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"register"
-							]
-						},
+						"url": "{{baseUrl}}/auth/register",
 						"description": "Register a new admin user"
 					},
 					"response": []
@@ -235,16 +200,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"Password123\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
+						"url": "{{baseUrl}}/auth/login",
 						"description": "Login as regular user"
 					},
 					"response": []
@@ -282,16 +238,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"borrower@example.com\",\n    \"password\": \"Password123\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
+						"url": "{{baseUrl}}/auth/login",
 						"description": "Login as borrower"
 					},
 					"response": []
@@ -329,16 +276,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"lender@example.com\",\n    \"password\": \"Password123\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"login"
-							]
-						},
+						"url": "{{baseUrl}}/auth/login",
 						"description": "Login as lender"
 					},
 					"response": []
@@ -375,17 +313,7 @@
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"borrower@example.com\",\n    \"password\": \"Password123\",\n    \"role\": \"borrower\"\n}"
 						},
-						"url": {
-							"raw": "{{baseUrl}}/auth/role/login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"role",
-								"login"
-							]
-						},
+						"url": "{{baseUrl}}/auth/role/login",
 						"description": "Login with a specific role"
 					},
 					"response": []
@@ -414,16 +342,7 @@
 					"request": {
 						"method": "GET",
 						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/auth/refresh-token",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"refresh-token"
-							]
-						},
+						"url": "{{baseUrl}}/auth/refresh-token",
 						"description": "Refresh the authentication token using the refresh token in cookies"
 					},
 					"response": []
@@ -456,30 +375,648 @@
 								"value": "Bearer {{authToken}}"
 							}
 						],
-						"url": {
-							"raw": "{{baseUrl}}/auth/logout",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"logout"
-							]
-						},
+						"url": "{{baseUrl}}/auth/logout",
 						"description": "Logout and invalidate the current token"
 					},
 					"response": []
 				}
 			],
 			"description": "Endpoints for registration, login, and authentication management"
+		},
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has user data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.user).to.be.an('object');",
+									"    pm.expect(jsonData.data.roles).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/auth/profile",
+						"description": "Get the current user's profile and roles"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Role to User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Role added successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"role added successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"borrower\",\n    \"monthlyIncome\": 4500,\n    \"employmentStatus\": \"employed\"\n}"
+						},
+						"url": "{{baseUrl}}/auth/role",
+						"description": "Add a borrower role to an existing user"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Role from User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Role removed successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"role removed successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/auth/role/borrower",
+						"description": "Remove a borrower role from a user"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing user profiles and roles"
+		},
+		{
+			"name": "Role-Based Dashboards",
+			"item": [
+				{
+					"name": "User Dashboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/auth/dashboard/user",
+						"description": "Get the standard user dashboard"
+					},
+					"response": []
+				},
+				{
+					"name": "Borrower Dashboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{borrowerAuthToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/auth/dashboard/borrower",
+						"description": "Get the borrower-specific dashboard (requires borrower role)"
+					},
+					"response": []
+				},
+				{
+					"name": "Lender Dashboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{lenderAuthToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/auth/dashboard/lender",
+						"description": "Get the lender-specific dashboard (requires lender role)"
+					},
+					"response": []
+				},
+				{
+					"name": "Manager Dashboard",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerAuthToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/auth/dashboard/manager",
+						"description": "Get the manager-specific dashboard (requires manager role)"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for role-specific dashboards"
+		},
+		{
+			"name": "Loan Management",
+			"item": [
+				{
+					"name": "Apply for Loan (Borrower Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Loan application created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.loan).to.be.an('object');",
+									"    pm.environment.set(\"loanId\", jsonData.data.loan._id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{borrowerAuthToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 10000,\n    \"term\": 12,\n    \"purpose\": \"personal\"\n}"
+						},
+						"url": "{{baseUrl}}/loans/apply",
+						"description": "Apply for a new loan (borrower access only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Review Loan Application (Lender Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Loan application status updated\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.loan.status).to.equal(\"approved\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{lenderAuthToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"approved\",\n    \"interestRate\": 5.5\n}"
+						},
+						"url": "{{baseUrl}}/loans/{{loanId}}/review",
+						"description": "Review and approve/reject a loan application (lender access only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Borrower Loans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Loans array returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.loans).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{borrowerAuthToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/loans/borrower",
+						"description": "Get all loans for the current borrower"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lender Loans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Loans array returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.loans).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{lenderAuthToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/loans/lender",
+						"description": "Get all loans managed by the current lender"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for loan application and management (role-specific access)"
+		},
+		{
+			"name": "Account",
+			"item": [
+				{
+					"name": "CreateAccount",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accountType\":\"savings\",\r\n    \"initialDeposit\":10000\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/accounts"
+					},
+					"response": []
+				},
+				{
+					"name": "GetAllAcounts",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text"
+								},
+								{
+									"key": "accountType",
+									"value": "savings",
+									"type": "text"
+								}
+							]
+						},
+						"url": "{{baseUrl}}/accounts"
+					},
+					"response": []
+				},
+				{
+					"name": "GetAccountById",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"updates\":{\r\n      \"status\":\"inactive\"\r\n\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/accounts/682ee9d5974ca7d44612c5f7"
+					},
+					"response": []
+				},
+				{
+					"name": "CloseUserAccount",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"updates\":{\r\n      \"status\":\"inactive\"\r\n\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/accounts/682ee9d5974ca7d44612c5f7"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transaction",
+			"item": [
+				{
+					"name": "Deposit",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accountId\":\"682ee87d974ca7d44612c5e3\",\r\n    \"amount\":1000,\r\n    \"description\":\"Deposit\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/transaction/deposit"
+					},
+					"response": []
+				},
+				{
+					"name": "Withdraw",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n       \"accountNumber\":\"SAV296431661\",\r\n       \"amount\":10000\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/transaction/withdraw"
+					},
+					"response": []
+				},
+				{
+					"name": "Transfer",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n       \"fromAccountNumber\":\"SAV521070061\",\r\n       \"toAccountnumber\":\"SAV296431661\",\r\n       \"amount\":5000\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/transaction/transfer"
+					},
+					"response": []
+				},
+				{
+					"name": "getAccountBalance",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text"
+								},
+								{
+									"key": "accountType",
+									"value": "savings",
+									"type": "text"
+								}
+							]
+						},
+						"url": "{{baseUrl}}/transaction/balance/"
+					},
+					"response": []
+				},
+				{
+					"name": "getTransactionHistroy",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "accountType",
+									"value": "savings",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "transfer",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"type": "text"
+								}
+							]
+						},
+						"url": "{{baseUrl}}/transaction/getTransactionHistroy/682ee87d974ca7d44612c5e3"
+					},
+					"response": []
+				}
+			]
 		}
-		
 	]
 }
-
-	
-
-			
-
-
-		
