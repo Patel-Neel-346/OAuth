@@ -3,6 +3,38 @@ import Account from "../models/Account.js";
 import Transaction from "../models/Transaction.js";
 
 class TransactionServiceV2 {
+  //helper mathods
+
+  static getMinimumBalance(accountType) {
+    const minimumBalances = {
+      savings: 100,
+      checking: 25,
+      loan: 0,
+      credit: 0,
+      investment: 500,
+    };
+
+    return minimumBalances[accountType] || 0;
+  }
+
+  //calculate fee
+  static calculateTransferFee(fromAccount, toAccount, amount) {
+    if (fromAccount.userId.toString() === toAccount.userId.toString()) {
+      return 0;
+    }
+
+    const baseFee = 2;
+    const percentageFee = 0.001;
+
+    let fee = baseFee + amount * percentageFee;
+
+    fee = Math.min(fee, 50);
+
+    fee = Math.max(fee, 1);
+
+    return parseFloat(fee.toFixed(2));
+  }
+
   static async DepositFunds(
     accountId,
     amount,
@@ -120,6 +152,179 @@ class TransactionServiceV2 {
       };
     } catch (error) {
       console.log("WithDraw Error:", error);
+      throw error;
+    }
+  }
+
+  static async TransferFunds(
+    fromAccountId,
+    toAccountId,
+    amount,
+    description = "Transfer",
+    metadata = {}
+  ) {
+    try {
+      if (amount <= 0) {
+        throw new ApiError(
+          400,
+          "Transfer Amount must be Grether than zero 0 man "
+        );
+      }
+
+      const [fromAccount, toAccount] = await Promise.all([
+        Account.findById(fromAccountId),
+        Account.findById(toAccountId),
+      ]);
+
+      if (!fromAccount) {
+        throw new ApiError(404, "Soruce account not found :(");
+      }
+
+      if (!toAccount) {
+        throw new ApiError(404, "Destination Account not found :(");
+      }
+
+      if (fromAccount.status !== "active") {
+        throw new ApiError(
+          400,
+          `Cannot transfer from ${fromAccount.status} account`
+        );
+      }
+
+      if (toAccount.status !== "active") {
+        throw new ApiError(
+          400,
+          `Cannot transfer to ${toAccount.status} account`
+        );
+      }
+
+      if (fromAccount.currency !== toAccount.currency) {
+        throw new ApiError(
+          400,
+          "Currency Mismatch between Two Account ,Currency must be same in both Account :("
+        );
+      }
+
+      if (fromAccount.balance < amount) {
+        throw new ApiError(
+          400,
+          "Bro you have not enough money to tranfer man ,you suck "
+        );
+      }
+
+      const minBalance = this.getMinimumBalance(fromAccount.accountType);
+
+      if (fromAccount.balance - amount < minBalance) {
+        throw new ApiError(
+          400,
+          `Transfer would breach minimum balance requirement of ${fromAccount.currency}${minBalance}`
+        );
+      }
+
+      const tranferFee = this.calculateTransferFee(
+        fromAccount,
+        toAccount,
+        amount
+      );
+      console.log(tranferFee);
+
+      const totalDeduction = amount + tranferFee;
+
+      if (fromAccount.balance < totalDeduction) {
+        throw new ApiError(400, "Dont have Enough Money ,You broke man lol ");
+      }
+
+      const transaction = new Transaction({
+        fromAccount: fromAccountId,
+        toAccount: toAccountId,
+        amount,
+        type: "transfer",
+        description,
+        status: "pending",
+        reference: `TRF${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        metadata: {
+          ...metadata,
+          tranferFee,
+          totalDeduction,
+        },
+      });
+
+      await transaction.save();
+
+      fromAccount.balance -= totalDeduction;
+      toAccount.balance += amount;
+
+      await Promise.all([fromAccount.save(), toAccount.save()]);
+
+      //if transfer fee have
+      if (tranferFee > 0) {
+        //make transaction for fee
+        const feeTransaction = new Transaction({
+          fromAccount: fromAccountId,
+          amount: tranferFee,
+          type: "fee",
+          description: "Transfer Fee",
+          status: "completed",
+          reference: `FEE${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          processAt: new Date(),
+          metadata: { relatedTransactionID: transaction._id },
+        });
+
+        await feeTransaction.save();
+      }
+
+      transaction.status = "completed";
+      transaction.processAt = new Date();
+      await transaction.save();
+
+      return {
+        transaction,
+        fromAccount: {
+          accountNumber: fromAccount.accountNumber,
+          newBalance: fromAccount.balance,
+          currency: fromAccount.currency,
+        },
+        toAccount: {
+          accountNumber: toAccount.accountNumber,
+          newBalance: toAccount.balance,
+          currency: toAccount.currency,
+        },
+        tranferFee: tranferFee > 0 ? tranferFee : null,
+      };
+    } catch (error) {
+      console.log(`Transfer Money Error in Service`);
+      throw error;
+    }
+  }
+
+  static async GetAccountBalance(accountId, limit = 10) {
+    try {
+      const account = await Account.findById(accountId);
+
+      if (!account) {
+        throw new ApiError(404, "Account does not exits in Our bank ");
+      }
+
+      const recentTransactions = await Transaction.find({
+        $or: [{ fromAccount: accountId }, { toAccount: accountId }],
+      })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate("fromAccount", "accountNumber accountType")
+        .populate("toAccount", "accountNumber accountType");
+
+      return {
+        account: {
+          accountNumber: account.accountNumber,
+          accountType: account.accountType,
+          balance: account.balance,
+          currency: account.currency,
+          status: account.status,
+        },
+        recentTransactions,
+      };
+    } catch (error) {
+      console.log(`get Account error in Services`);
       throw error;
     }
   }

@@ -6,6 +6,7 @@ import TransactionService from "../utils/AccountService.js";
 import Account from "../models/Account.js";
 import RoleUserService from "../utils/roleUserService.js";
 import { ROLE_TYPES } from "../models/Role.js";
+import Transaction from "../models/Transaction.js";
 
 // Deposit funds to user's account
 export const depositFunds = asyncHandler(async (req, res, next) => {

@@ -19,6 +19,7 @@ import { body, param, query, validationResult } from "express-validator";
 import { ApiError } from "../helpers/ApiError.js";
 import {
   DepositFunds,
+  TransferFunds,
   WithDrawFunds,
 } from "../controller/TransactionControllerV2.js";
 
@@ -379,9 +380,10 @@ TransactionRouter.post(
 TransactionRouter.post(
   "/transfer",
   Authenticated,
-  transferValidation,
-  handleValidationErrors,
-  transferFunds
+  // transferValidation,
+  // handleValidationErrors,
+  // transferFunds
+  TransferFunds
 );
 
 /**
@@ -511,6 +513,14 @@ TransactionRouter.get(
     .withMessage("Limit must be between 1 and 50"),
   handleValidationErrors,
   getAccountBalance
+);
+
+TransactionRouter.get(
+  "/getTransactionHistroy/:accountId",
+  Authenticated,
+  transactionHistoryValidation,
+  handleValidationErrors,
+  getTransactionHistory
 );
 
 export default TransactionRouter;

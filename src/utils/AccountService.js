@@ -700,7 +700,10 @@ class TransactionService {
                     $and: [
                       { $eq: ["$type", "deposit"] },
                       {
-                        $eq: ["$toAccount", mongoose.Types.ObjectId(accountId)],
+                        $eq: [
+                          "$toAccount",
+                          new mongoose.Types.ObjectId(accountId),
+                        ],
                       },
                     ],
                   },
