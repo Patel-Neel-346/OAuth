@@ -169,8 +169,11 @@ export const GetTransactionHistory = asyncHandler(async (req, res, next) => {
   const userId = req.user;
 
   try {
-    const account = await Account.findOne({ accountNumber, userId });
-
+    const account = await Account.findOne({
+      accountNumber: accountNumber,
+      userId,
+    });
+    console.log(account);
     if (!account) {
       return next(new ApiError(400, "Account does not exisits"));
     }

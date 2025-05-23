@@ -1,24 +1,25 @@
 // src/routes/transactionRoutes.js
 import express from "express";
-import {
-  depositFunds,
-  withdrawFunds,
-  transferFunds,
-  transferByAccountNumber,
-  getAccountBalance,
-  getTransactionHistory,
-  processInterestPayment,
-  getTransactionDetails,
-  getAllUserTransactions,
-  cancelTransaction,
-  reverseTransaction,
-  getTransactionStatistics,
-} from "../controller/TransactionController.js";
+// import {
+//   depositFunds,
+//   withdrawFunds,
+//   transferFunds,
+//   transferByAccountNumber,
+//   getAccountBalance,
+//   getTransactionHistory,
+//   processInterestPayment,
+//   getTransactionDetails,
+//   getAllUserTransactions,
+//   cancelTransaction,
+//   reverseTransaction,
+//   getTransactionStatistics,
+// } from "../controller/TransactionController.js";
 import { Authenticated } from "../middleware/authMiddleware.js";
 import { body, param, query, validationResult } from "express-validator";
 import { ApiError } from "../helpers/ApiError.js";
 import {
   DepositFunds,
+  GetTransactionHistory,
   TransferFunds,
   WithDrawFunds,
 } from "../controller/TransactionControllerV2.js";
@@ -254,9 +255,9 @@ TransactionRouter.post(
   Authenticated,
   // depositValidation,
   // handleValidationErrors,
-  depositFunds
+  // depositFunds
 
-  // DepositFunds
+  DepositFunds
 );
 
 /**
@@ -305,8 +306,8 @@ TransactionRouter.post(
   Authenticated,
   // withdrawalValidation,
   // handleValidationErrors,
-  withdrawFunds
-  // WithDrawFunds
+  // withdrawFunds
+  WithDrawFunds
 );
 
 /**
@@ -382,145 +383,146 @@ TransactionRouter.post(
   Authenticated,
   // transferValidation,
   // handleValidationErrors,
-  transferFunds
-  // TransferFunds
+  // transferFunds
+  TransferFunds
 );
 
-/**
- * @swagger
- * /transactions/transfer-by-account:
- *   post:
- *     summary: Transfer funds using account number
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - fromAccountId
- *               - toAccountNumber
- *               - amount
- *             properties:
- *               fromAccountId:
- *                 type: string
- *                 description: Source account ID
- *               toAccountNumber:
- *                 type: string
- *                 description: Destination account number
- *               amount:
- *                 type: number
- *                 minimum: 0.01
- *                 description: Transfer amount
- *               description:
- *                 type: string
- *                 maxLength: 500
- *                 description: Optional transaction description
- *     responses:
- *       200:
- *         description: Transfer completed successfully
- *       400:
- *         description: Bad request - validation errors
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
-TransactionRouter.post(
-  "/transfer-by-account",
-  Authenticated,
-  transferByAccountNumberValidation,
-  handleValidationErrors,
-  transferByAccountNumber
-);
+// /**
+//  * @swagger
+//  * /transactions/transfer-by-account:
+//  *   post:
+//  *     summary: Transfer funds using account number
+//  *     tags: [Transactions]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             required:
+//  *               - fromAccountId
+//  *               - toAccountNumber
+//  *               - amount
+//  *             properties:
+//  *               fromAccountId:
+//  *                 type: string
+//  *                 description: Source account ID
+//  *               toAccountNumber:
+//  *                 type: string
+//  *                 description: Destination account number
+//  *               amount:
+//  *                 type: number
+//  *                 minimum: 0.01
+//  *                 description: Transfer amount
+//  *               description:
+//  *                 type: string
+//  *                 maxLength: 500
+//  *                 description: Optional transaction description
+//  *     responses:
+//  *       200:
+//  *         description: Transfer completed successfully
+//  *       400:
+//  *         description: Bad request - validation errors
+//  *       401:
+//  *         description: Unauthorized
+//  *       404:
+//  *         description: Account not found
+//  *       500:
+//  *         description: Server error
+//  */
+// TransactionRouter.post(
+//   "/transfer-by-account",
+//   Authenticated,
+//   transferByAccountNumberValidation,
+//   handleValidationErrors,
+//   transferByAccountNumber
+// );
 
-/**
- * @swagger
- * /transactions/balance/{accountId}:
- *   get:
- *     summary: Get account balance and recent transactions
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: accountId
- *         required: true
- *         schema:
- *           type: string
- *         description: Account ID
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 50
- *           default: 10
- *         description: Number of recent transactions to retrieve
- *     responses:
- *       200:
- *         description: Account balance retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 statusCode:
- *                   type: number
- *                 data:
- *                   type: object
- *                   properties:
- *                     account:
- *                       type: object
- *                       properties:
- *                         accountNumber:
- *                           type: string
- *                         accountType:
- *                           type: string
- *                         balance:
- *                           type: number
- *                         currency:
- *                           type: string
- *                         status:
- *                           type: string
- *                     recentTransactions:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Transaction'
- *                 message:
- *                   type: string
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Account not found
- *       500:
- *         description: Server error
- */
+// /**
+//  * @swagger
+//  * /transactions/balance/{accountId}:
+//  *   get:
+//  *     summary: Get account balance and recent transactions
+//  *     tags: [Transactions]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: accountId
+//  *         required: true
+//  *         schema:
+//  *           type: string
+//  *         description: Account ID
+//  *       - in: query
+//  *         name: limit
+//  *         schema:
+//  *           type: integer
+//  *           minimum: 1
+//  *           maximum: 50
+//  *           default: 10
+//  *         description: Number of recent transactions to retrieve
+//  *     responses:
+//  *       200:
+//  *         description: Account balance retrieved successfully
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                 success:
+//  *                   type: boolean
+//  *                 statusCode:
+//  *                   type: number
+//  *                 data:
+//  *                   type: object
+//  *                   properties:
+//  *                     account:
+//  *                       type: object
+//  *                       properties:
+//  *                         accountNumber:
+//  *                           type: string
+//  *                         accountType:
+//  *                           type: string
+//  *                         balance:
+//  *                           type: number
+//  *                         currency:
+//  *                           type: string
+//  *                         status:
+//  *                           type: string
+//  *                     recentTransactions:
+//  *                       type: array
+//  *                       items:
+//  *                         $ref: '#/components/schemas/Transaction'
+//  *                 message:
+//  *                   type: string
+//  *       401:
+//  *         description: Unauthorized
+//  *       404:
+//  *         description: Account not found
+//  *       500:
+//  *         description: Server error
+//  */
+// TransactionRouter.get(
+//   "/balance/:accountId",
+//   Authenticated,
+//   param("accountId").isMongoId().withMessage("Invalid account ID format"),
+//   query("limit")
+//     .optional()
+//     .isInt({ min: 1, max: 50 })
+//     .withMessage("Limit must be between 1 and 50"),
+//   handleValidationErrors,
+//   getAccountBalance
+// );
+
 TransactionRouter.get(
-  "/balance/:accountId",
+  "/getTransactionHistroy/:accountNumber",
   Authenticated,
-  param("accountId").isMongoId().withMessage("Invalid account ID format"),
-  query("limit")
-    .optional()
-    .isInt({ min: 1, max: 50 })
-    .withMessage("Limit must be between 1 and 50"),
-  handleValidationErrors,
-  getAccountBalance
-);
-
-TransactionRouter.get(
-  "/getTransactionHistroy/:accountId",
-  Authenticated,
-  transactionHistoryValidation,
-  handleValidationErrors,
-  getTransactionHistory
+  // transactionHistoryValidation,
+  // handleValidationErrors,
+  // getTransactionHistory
+  GetTransactionHistory
 );
 
 export default TransactionRouter;
