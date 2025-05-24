@@ -2,6 +2,7 @@ import { ApiError } from "../helpers/ApiError.js";
 import { ApiRes } from "../helpers/ApiRespones.js";
 import { asyncHandler } from "../helpers/asyncHandler.js";
 import Account from "../models/Account.js";
+import Transaction from "../models/Transaction.js";
 import TransactionServiceV2 from "../services/TransactionService.js";
 
 export const DepositFunds = asyncHandler(async (req, res, next) => {
@@ -154,7 +155,7 @@ export const GetAccountBalance = asyncHandler(async (req, res, next) => {
 });
 
 export const GetTransactionHistory = asyncHandler(async (req, res, next) => {
-  const { accountNumber } = req.body || req.params;
+  const { accountNumber } = req.body || req.params || req.query;
   const {
     type,
     status,
@@ -169,9 +170,9 @@ export const GetTransactionHistory = asyncHandler(async (req, res, next) => {
   const userId = req.user;
 
   try {
+    console.log(accountNumber);
     const account = await Account.findOne({
       accountNumber: accountNumber,
-      userId,
     });
     console.log(account);
     if (!account) {
@@ -220,4 +221,129 @@ export const GetTransactionHistory = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const TransactionSummary = asyncHandler(async (req, res, next) => {});
+export const TransactionSummary = asyncHandler(async (req, res, next) => {
+  const userId = req.user;
+  const { period = "month", accountId } = req.query;
+
+  try {
+    const accountQuery = { userId };
+    if (accountId) {
+      accountQuery._id = accountId;
+
+      const account = await Account.findOne(accountQuery);
+      if (!account) {
+        return next(new ApiError(404, "Account not found bitch :-]"));
+      }
+    }
+
+    const userAccounts = await Account.find(accountQuery).select("_id");
+    const accountIds = userAccounts.map((acc) => acc._id);
+
+    if (accountIds.length == 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiRes(200, { statistics: {} }, "No Accounts Founds For User")
+        );
+    }
+
+    const now = new Date();
+    let startDate;
+    switch (period) {
+      case "week":
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case "quarter":
+        startDate = new Date(
+          now.getFullYear(),
+          Math.floor(now.getMonth() / 3) * 3,
+          1
+        );
+        break;
+      case "year":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    // Aggregate transaction statistics
+    const statistics = await Transaction.aggregate([
+      {
+        $match: {
+          $or: [
+            { fromAccount: { $in: accountIds } },
+            { toAccount: { $in: accountIds } },
+          ],
+          createdAt: { $gte: startDate },
+          status: "completed",
+        },
+      },
+      {
+        $group: {
+          _id: "$type",
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$amount" },
+          avgAmount: { $avg: "$amount" },
+        },
+      },
+    ]);
+
+    // Format statistics
+    const formattedStats = {};
+    statistics.forEach((stat) => {
+      formattedStats[stat._id] = {
+        count: stat.count,
+        totalAmount: parseFloat(stat.totalAmount.toFixed(2)),
+        avgAmount: parseFloat(stat.avgAmount.toFixed(2)),
+      };
+    });
+
+    // Get daily transaction counts for the period
+    const dailyStats = await Transaction.aggregate([
+      {
+        $match: {
+          $or: [
+            { fromAccount: { $in: accountIds } },
+            { toAccount: { $in: accountIds } },
+          ],
+          createdAt: { $gte: startDate },
+          status: "completed",
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.status(200).json(
+      new ApiRes(
+        200,
+        {
+          period,
+          startDate,
+          endDate: now,
+          statistics: formattedStats,
+          dailyBreakdown: dailyStats,
+          totalAccounts: accountIds.length,
+        },
+        "Transaction statistics retrieved successfully"
+      )
+    );
+  } catch (error) {
+    console.log("TransactionSummary Error");
+    return next(
+      new ApiError(500, `Transaction Summary Error: ${error.message} `)
+    );
+  }
+});

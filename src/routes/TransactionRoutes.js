@@ -20,6 +20,7 @@ import { ApiError } from "../helpers/ApiError.js";
 import {
   DepositFunds,
   GetTransactionHistory,
+  TransactionSummary,
   TransferFunds,
   WithDrawFunds,
 } from "../controller/TransactionControllerV2.js";
@@ -523,6 +524,12 @@ TransactionRouter.get(
   // handleValidationErrors,
   // getTransactionHistory
   GetTransactionHistory
+);
+
+TransactionRouter.get(
+  "/getTransactionSummaryForUser",
+  Authenticated,
+  TransactionSummary
 );
 
 export default TransactionRouter;
