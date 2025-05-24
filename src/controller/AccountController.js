@@ -6,7 +6,7 @@ import User from "../models/User.js";
 import RoleUserService from "../utils/roleUserService.js";
 import { ROLE_TYPES } from "../models/Role.js";
 
-// Create a new account for authenticated user
+// Create a new account for authenticated user with role-based restrictions
 export const CreateAccount = asyncHandler(async (req, res, next) => {
   const { accountType, initialDeposit = 0, currency = "₹" } = req.body;
   const userId = req.user;
@@ -38,29 +38,38 @@ export const CreateAccount = asyncHandler(async (req, res, next) => {
     // Get user's complete profile with roles
     const userProfile = await RoleUserService.getUserCompleteProfile(userId);
 
-    // Check if user can create this type of account based on their roles
-    const canCreateAccount = await validateAccountCreation(
+    // Role-based account creation validation
+    const canCreateAccount = await validateAccountCreationByRole(
+      accountType,
+      userProfile.roles,
+      userProfile
+    );
+
+    if (!canCreateAccount.allowed) {
+      return next(new ApiError(403, canCreateAccount.message));
+    }
+
+    // Check account limits based on user role
+    const accountLimitCheck = await checkAccountLimits(
+      userId,
       accountType,
       userProfile.roles
     );
-    if (!canCreateAccount.allowed) {
-      return next(new ApiError(403, canCreateAccount.message));
+    if (!accountLimitCheck.allowed) {
+      return next(new ApiError(403, accountLimitCheck.message));
     }
 
     // Generate unique account number
     const accountNumber = await generateAccountNumber(accountType);
 
-    // Validate initial deposit for certain account types
-    if (accountType === "savings" && initialDeposit < 100) {
-      return next(
-        new ApiError(400, "Minimum initial deposit for savings account is ₹100")
-      );
-    }
-
-    if (accountType === "checking" && initialDeposit < 50) {
-      return next(
-        new ApiError(400, "Minimum initial deposit for checking account is ₹50")
-      );
+    // Role-based minimum deposit validation
+    const minDepositValidation = validateMinimumDeposit(
+      accountType,
+      initialDeposit,
+      userProfile.roles
+    );
+    if (!minDepositValidation.valid) {
+      return next(new ApiError(400, minDepositValidation.message));
     }
 
     // Set interest rate based on account type and user profile
@@ -77,7 +86,7 @@ export const CreateAccount = asyncHandler(async (req, res, next) => {
       status: "active",
     });
 
-    // Update user's account number if this is their first account
+    // Update user's primary account number if this is their first primary account
     if (
       !user.accountNumber &&
       (accountType === "savings" || accountType === "checking")
@@ -110,22 +119,20 @@ export const CreateAccount = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Get all accounts for authenticated user
+// Get all accounts for authenticated user with role-based filtering
 export const getAllAccount = asyncHandler(async (req, res, next) => {
   const userId = req.user;
   const { status, accountType, page = 1, limit = 10 } = req.query;
 
   try {
-    // Build filter query
-    const filter = { userId };
+    // Get user's complete profile with roles
+    const userProfile = await RoleUserService.getUserCompleteProfile(userId);
 
-    if (status) {
-      filter.status = status;
-    }
-
-    if (accountType) {
-      filter.accountType = accountType;
-    }
+    // Build filter query based on user role
+    const filter = await buildAccountFilterByRole(userId, userProfile.roles, {
+      status,
+      accountType,
+    });
 
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -137,12 +144,18 @@ export const getAllAccount = asyncHandler(async (req, res, next) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Filter sensitive information based on user role
+    const filteredAccounts = filterAccountDataByRole(
+      accounts,
+      userProfile.roles
+    );
+
     // Get total count for pagination
     const totalAccounts = await Account.countDocuments(filter);
     const totalPages = Math.ceil(totalAccounts / parseInt(limit));
 
-    // Calculate total balance across all accounts
-    const totalBalance = accounts.reduce(
+    // Calculate total balance across accessible accounts
+    const totalBalance = filteredAccounts.reduce(
       (sum, account) => sum + account.balance,
       0
     );
@@ -151,7 +164,7 @@ export const getAllAccount = asyncHandler(async (req, res, next) => {
       new ApiRes(
         200,
         {
-          accounts,
+          accounts: filteredAccounts,
           pagination: {
             currentPage: parseInt(page),
             totalPages,
@@ -161,9 +174,11 @@ export const getAllAccount = asyncHandler(async (req, res, next) => {
           },
           summary: {
             totalBalance,
-            accountCount: accounts.length,
-            currency: accounts.length > 0 ? accounts[0].currency : "₹",
+            accountCount: filteredAccounts.length,
+            currency:
+              filteredAccounts.length > 0 ? filteredAccounts[0].currency : "₹",
           },
+          userRoles: userProfile.roles, // Include user roles for frontend logic
         },
         "Accounts retrieved successfully"
       )
@@ -174,33 +189,53 @@ export const getAllAccount = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Get specific account details for authenticated user
+// Get specific account details with role-based access control
 export const getUserAccount = asyncHandler(async (req, res, next) => {
   const userId = req.user;
   const { accountId } = req.params;
 
   try {
-    // Find account belonging to the user
-    const account = await Account.findOne({
-      _id: accountId,
-      userId,
-    }).select("-__v");
+    // Get user's complete profile with roles
+    const userProfile = await RoleUserService.getUserCompleteProfile(userId);
+
+    // Build query based on user role
+    let query = { _id: accountId };
+
+    // Non-admin users can only access their own accounts
+    if (!userProfile.roles.includes(ROLE_TYPES.ADMIN)) {
+      query.userId = userId;
+    }
+
+    // Find account
+    const account = await Account.findOne(query).select("-__v");
 
     if (!account) {
       return next(new ApiError(404, "Account not found or access denied"));
     }
 
-    // Get recent transactions (if you have a Transaction model)
-    // const recentTransactions = await Transaction.find({ accountId })
-    //   .sort({ createdAt: -1 })
-    //   .limit(5);
+    // Check if user has permission to view this account type
+    const canViewAccount = await validateAccountAccess(
+      account.accountType,
+      userProfile.roles,
+      account.userId,
+      userId
+    );
+    if (!canViewAccount.allowed) {
+      return next(new ApiError(403, canViewAccount.message));
+    }
+
+    // Filter account data based on user role
+    const filteredAccount = filterSingleAccountDataByRole(
+      account,
+      userProfile.roles
+    );
 
     res.status(200).json(
       new ApiRes(
         200,
         {
-          account,
-          // recentTransactions: recentTransactions || []
+          account: filteredAccount,
+          userRoles: userProfile.roles,
         },
         "Account details retrieved successfully"
       )
@@ -211,50 +246,58 @@ export const getUserAccount = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Update account information
+// Update account information with role-based permissions
 export const UpdateUserAccount = asyncHandler(async (req, res, next) => {
   const userId = req.user;
   const { accountId } = req.params;
   const updates = req.body;
 
-  // Fields that can be updated
-  const allowedUpdates = ["status", "interestRate"];
-  const actualUpdates = {};
-
-  // Filter allowed updates
-  Object.keys(updates).forEach((key) => {
-    if (allowedUpdates.includes(key)) {
-      actualUpdates[key] = updates[key];
-    }
-  });
-
-  if (Object.keys(actualUpdates).length === 0) {
-    return next(new ApiError(400, "No valid fields to update"));
-  }
-
   try {
     // Get user profile to check permissions
     const userProfile = await RoleUserService.getUserCompleteProfile(userId);
 
-    // Only admins or account owners can update certain fields
-    if (
-      actualUpdates.interestRate &&
-      !userProfile.roles.includes(ROLE_TYPES.ADMIN)
-    ) {
-      return next(
-        new ApiError(403, "Only administrators can update interest rates")
-      );
+    // Define allowed updates based on user roles
+    const allowedUpdates = getAllowedUpdatesByRole(userProfile.roles);
+    const actualUpdates = {};
+
+    // Filter allowed updates based on user role
+    Object.keys(updates).forEach((key) => {
+      if (allowedUpdates.includes(key)) {
+        actualUpdates[key] = updates[key];
+      }
+    });
+
+    if (Object.keys(actualUpdates).length === 0) {
+      return next(new ApiError(400, "No valid fields to update for your role"));
+    }
+
+    // Build query based on user role
+    let query = { _id: accountId };
+    if (!userProfile.roles.includes(ROLE_TYPES.ADMIN)) {
+      query.userId = userId;
     }
 
     // Find and update account
     const account = await Account.findOneAndUpdate(
-      { _id: accountId, userId },
+      query,
       { ...actualUpdates, updatedAt: Date.now() },
       { new: true, runValidators: true }
     ).select("-__v");
 
     if (!account) {
       return next(new ApiError(404, "Account not found or access denied"));
+    }
+
+    // Log account update for audit (admins and managers)
+    if (
+      userProfile.roles.includes(ROLE_TYPES.ADMIN) ||
+      userProfile.roles.includes(ROLE_TYPES.MANAGER)
+    ) {
+      console.log(
+        `Account ${accountId} updated by user ${userId} with role ${userProfile.roles.join(
+          ", "
+        )}`
+      );
     }
 
     res
@@ -266,21 +309,39 @@ export const UpdateUserAccount = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Close/Deactivate user account
+// Close/Deactivate user account with role-based restrictions
 export const CloseUserAccount = asyncHandler(async (req, res, next) => {
   const userId = req.user;
   const { accountId } = req.params;
   const { reason, transferAccountId } = req.body;
 
   try {
+    // Get user profile to check permissions
+    const userProfile = await RoleUserService.getUserCompleteProfile(userId);
+
+    // Build query based on user role
+    let query = { _id: accountId };
+    if (!userProfile.roles.includes(ROLE_TYPES.ADMIN)) {
+      query.userId = userId;
+    }
+
     // Find the account to close
-    const account = await Account.findOne({
-      _id: accountId,
-      userId,
-    });
+    const account = await Account.findOne(query);
 
     if (!account) {
       return next(new ApiError(404, "Account not found or access denied"));
+    }
+
+    // Role-based account closure validation
+    const canCloseAccount = await validateAccountClosureByRole(
+      account.accountType,
+      userProfile.roles,
+      account.userId,
+      userId
+    );
+
+    if (!canCloseAccount.allowed) {
+      return next(new ApiError(403, canCloseAccount.message));
     }
 
     // Check if account can be closed
@@ -288,6 +349,7 @@ export const CloseUserAccount = asyncHandler(async (req, res, next) => {
       return next(new ApiError(400, "Account is already closed"));
     }
 
+    // Handle balance transfer if needed
     if (account.balance > 0) {
       if (!transferAccountId) {
         return next(
@@ -298,16 +360,20 @@ export const CloseUserAccount = asyncHandler(async (req, res, next) => {
         );
       }
 
-      // Verify transfer account exists and belongs to user
-      const transferAccount = await Account.findOne({
-        _id: transferAccountId,
-        userId,
-        status: "active",
-      });
+      // Verify transfer account exists and user has access
+      let transferQuery = { _id: transferAccountId, status: "active" };
+      if (!userProfile.roles.includes(ROLE_TYPES.ADMIN)) {
+        transferQuery.userId = userId;
+      }
+
+      const transferAccount = await Account.findOne(transferQuery);
 
       if (!transferAccount) {
         return next(
-          new ApiError(404, "Transfer account not found or inactive")
+          new ApiError(
+            404,
+            "Transfer account not found, inactive, or access denied"
+          )
         );
       }
 
@@ -326,6 +392,13 @@ export const CloseUserAccount = asyncHandler(async (req, res, next) => {
     account.status = "closed";
     account.updatedAt = Date.now();
     await account.save();
+
+    // Log account closure for audit
+    console.log(
+      `Account ${accountId} closed by user ${userId} with role ${userProfile.roles.join(
+        ", "
+      )}`
+    );
 
     res.status(200).json(
       new ApiRes(
@@ -354,9 +427,15 @@ export const CloseUserAccount = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Helper function to validate account creation based on user roles
-async function validateAccountCreation(accountType, userRoles) {
-  // Basic account types available to all users
+// ROLE-BASED HELPER FUNCTIONS
+
+// Enhanced account creation validation based on user roles
+async function validateAccountCreationByRole(
+  accountType,
+  userRoles,
+  userProfile
+) {
+  // Basic account types available to all authenticated users
   const basicAccountTypes = ["savings", "checking"];
 
   if (basicAccountTypes.includes(accountType)) {
@@ -366,12 +445,22 @@ async function validateAccountCreation(accountType, userRoles) {
   // Role-specific account types
   if (accountType === "loan") {
     if (userRoles.includes(ROLE_TYPES.BORROWER)) {
+      // Additional validation for borrowers
+      if (
+        userProfile.borrowerProfile &&
+        userProfile.borrowerProfile.verificationStatus !== "verified"
+      ) {
+        return {
+          allowed: false,
+          message:
+            "Borrower profile must be verified before creating loan accounts.",
+        };
+      }
       return { allowed: true };
     }
     return {
       allowed: false,
-      message:
-        "Only borrowers can create loan accounts. Please register as a borrower first.",
+      message: "Only verified borrowers can create loan accounts.",
     };
   }
 
@@ -380,12 +469,24 @@ async function validateAccountCreation(accountType, userRoles) {
       userRoles.includes(ROLE_TYPES.LENDER) ||
       userRoles.includes(ROLE_TYPES.ADMIN)
     ) {
+      // Additional validation for lenders
+      if (
+        userRoles.includes(ROLE_TYPES.LENDER) &&
+        userProfile.lenderProfile &&
+        userProfile.lenderProfile.verificationStatus !== "verified"
+      ) {
+        return {
+          allowed: false,
+          message:
+            "Lender profile must be verified before creating investment accounts.",
+        };
+      }
       return { allowed: true };
     }
     return {
       allowed: false,
       message:
-        "Only lenders and administrators can create investment accounts.",
+        "Only verified lenders and administrators can create investment accounts.",
     };
   }
 
@@ -402,10 +503,240 @@ async function validateAccountCreation(accountType, userRoles) {
     };
   }
 
-  return { allowed: false, message: "Invalid account type" };
+  return { allowed: false, message: "Invalid account type for your role" };
 }
 
-// Helper function to generate unique account number
+// Check account limits based on user role
+async function checkAccountLimits(userId, accountType, userRoles) {
+  const userAccounts = await Account.find({
+    userId,
+    accountType,
+    status: { $ne: "closed" },
+  });
+
+  // Role-based account limits
+  const limits = {
+    [ROLE_TYPES.USER]: {
+      savings: 2,
+      checking: 1,
+      loan: 0,
+      credit: 0,
+      investment: 0,
+    },
+    [ROLE_TYPES.BORROWER]: {
+      savings: 3,
+      checking: 2,
+      loan: 5,
+      credit: 2,
+      investment: 0,
+    },
+    [ROLE_TYPES.LENDER]: {
+      savings: 5,
+      checking: 3,
+      loan: 2,
+      credit: 3,
+      investment: 10,
+    },
+    [ROLE_TYPES.ADMIN]: {
+      savings: 999,
+      checking: 999,
+      loan: 999,
+      credit: 999,
+      investment: 999,
+    },
+  };
+
+  // Get the highest limit based on user roles
+  let maxLimit = 0;
+  userRoles.forEach((role) => {
+    if (limits[role] && limits[role][accountType] > maxLimit) {
+      maxLimit = limits[role][accountType];
+    }
+  });
+
+  if (userAccounts.length >= maxLimit) {
+    return {
+      allowed: false,
+      message: `Maximum ${maxLimit} ${accountType} accounts allowed for your role level.`,
+    };
+  }
+
+  return { allowed: true };
+}
+
+// Validate minimum deposit based on role
+function validateMinimumDeposit(accountType, initialDeposit, userRoles) {
+  const minimums = {
+    savings: userRoles.includes(ROLE_TYPES.LENDER) ? 50 : 100,
+    checking: userRoles.includes(ROLE_TYPES.LENDER) ? 25 : 50,
+    loan: 0,
+    credit: 0,
+    investment: userRoles.includes(ROLE_TYPES.ADMIN) ? 0 : 1000,
+  };
+
+  const minRequired = minimums[accountType] || 0;
+
+  if (initialDeposit < minRequired) {
+    return {
+      valid: false,
+      message: `Minimum initial deposit for ${accountType} account is ${minRequired} for your role level.`,
+    };
+  }
+
+  return { valid: true };
+}
+
+// Build account filter based on user role
+async function buildAccountFilterByRole(
+  userId,
+  userRoles,
+  { status, accountType }
+) {
+  let filter = {};
+
+  // Admins can see all accounts, others only their own
+  if (!userRoles.includes(ROLE_TYPES.ADMIN)) {
+    filter.userId = userId;
+  }
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (accountType) {
+    filter.accountType = accountType;
+  }
+
+  return filter;
+}
+
+// Filter account data based on user role
+function filterAccountDataByRole(accounts, userRoles) {
+  if (
+    userRoles.includes(ROLE_TYPES.ADMIN) ||
+    userRoles.includes(ROLE_TYPES.MANAGER)
+  ) {
+    // Admins and managers see all data
+    return accounts;
+  }
+
+  // Regular users see limited data
+  return accounts.map((account) => ({
+    _id: account._id,
+    accountNumber: account.accountNumber,
+    accountType: account.accountType,
+    balance: account.balance,
+    currency: account.currency,
+    status: account.status,
+    interestRate: account.interestRate,
+    createdAt: account.createdAt,
+    updatedAt: account.updatedAt,
+  }));
+}
+
+// Filter single account data based on user role
+function filterSingleAccountDataByRole(account, userRoles) {
+  if (
+    userRoles.includes(ROLE_TYPES.ADMIN) ||
+    userRoles.includes(ROLE_TYPES.MANAGER)
+  ) {
+    return account;
+  }
+
+  // Regular users see limited data
+  const filteredAccount = { ...account.toObject() };
+
+  // Remove sensitive fields for non-admin users if needed
+  // Currently returning all fields, but you can customize this
+
+  return filteredAccount;
+}
+
+// Validate account access based on user role
+async function validateAccountAccess(
+  accountType,
+  userRoles,
+  accountOwnerId,
+  requestingUserId
+) {
+  // Admins can access any account
+  if (userRoles.includes(ROLE_TYPES.ADMIN)) {
+    return { allowed: true };
+  }
+
+  // Managers can access accounts within their purview
+  if (userRoles.includes(ROLE_TYPES.MANAGER)) {
+    return { allowed: true };
+  }
+
+  // Users can only access their own accounts
+  if (accountOwnerId.toString() !== requestingUserId.toString()) {
+    return {
+      allowed: false,
+      message: "You can only access your own accounts.",
+    };
+  }
+
+  return { allowed: true };
+}
+
+// Get allowed update fields based on user role
+function getAllowedUpdatesByRole(userRoles) {
+  if (userRoles.includes(ROLE_TYPES.ADMIN)) {
+    return ["status", "interestRate", "balance"]; // Admins can update everything
+  }
+
+  if (userRoles.includes(ROLE_TYPES.MANAGER)) {
+    return ["status", "interestRate"]; // Managers can update status and rates
+  }
+
+  // Regular users can only update limited fields
+  return ["status"]; // Only status updates for regular users
+}
+
+// Validate account closure based on role
+async function validateAccountClosureByRole(
+  accountType,
+  userRoles,
+  accountOwnerId,
+  requestingUserId
+) {
+  // Admins can close any account
+  if (userRoles.includes(ROLE_TYPES.ADMIN)) {
+    return { allowed: true };
+  }
+
+  // Users can only close their own accounts
+  if (accountOwnerId.toString() !== requestingUserId.toString()) {
+    return {
+      allowed: false,
+      message: "You can only close your own accounts.",
+    };
+  }
+
+  // Some account types might have restrictions
+  if (accountType === "loan") {
+    // Additional validation for loan accounts
+    const account = await Account.findOne({
+      userId: accountOwnerId,
+      accountType: "loan",
+      balance: { $gt: 0 },
+    });
+
+    if (account) {
+      return {
+        allowed: false,
+        message: "Cannot close loan account with outstanding balance.",
+      };
+    }
+  }
+
+  return { allowed: true };
+}
+
+// EXISTING HELPER FUNCTIONS (Enhanced)
+
+// Generate unique account number with role-based prefixes
 async function generateAccountNumber(accountType) {
   const prefixes = {
     savings: "SAV",
@@ -432,7 +763,7 @@ async function generateAccountNumber(accountType) {
   return accountNumber;
 }
 
-// Helper function to calculate interest rate based on account type and user profile
+// Enhanced interest rate calculation with role-based adjustments
 function calculateInterestRate(accountType, userProfile) {
   const baseRates = {
     savings: 3.5,
@@ -444,24 +775,41 @@ function calculateInterestRate(accountType, userProfile) {
 
   let rate = baseRates[accountType] || 0;
 
-  // Adjust rates based on user profile
-  if (
-    userProfile.lenderProfile &&
-    (accountType === "savings" || accountType === "investment")
-  ) {
-    // Lenders get slightly better rates
-    rate += 0.5;
-  }
-
-  if (userProfile.borrowerProfile) {
-    const creditScore = userProfile.borrowerProfile.creditScore;
-    if (creditScore && accountType === "loan") {
-      // Better credit score = lower loan rates
-      if (creditScore >= 750) rate -= 1.0;
-      else if (creditScore >= 700) rate -= 0.5;
-      else if (creditScore < 600) rate += 1.0;
+  // Role-based rate adjustments
+  if (userProfile.roles.includes(ROLE_TYPES.LENDER)) {
+    // Lenders get better rates on savings and investment accounts
+    if (accountType === "savings" || accountType === "investment") {
+      rate += 0.5;
     }
   }
 
-  return Math.max(0, rate); // Ensure rate is not negative
+  if (userProfile.roles.includes(ROLE_TYPES.ADMIN)) {
+    // Admins get the best rates
+    if (accountType === "savings" || accountType === "investment") {
+      rate += 1.0;
+    } else if (accountType === "loan" || accountType === "credit") {
+      rate -= 1.0;
+    }
+  }
+
+  // Borrower profile adjustments
+  if (userProfile.borrowerProfile) {
+    const creditScore = userProfile.borrowerProfile.creditScore;
+    if (creditScore && (accountType === "loan" || accountType === "credit")) {
+      if (creditScore >= 750) rate -= 1.5;
+      else if (creditScore >= 700) rate -= 1.0;
+      else if (creditScore >= 650) rate -= 0.5;
+      else if (creditScore < 600) rate += 1.5;
+    }
+  }
+
+  // Lender profile adjustments for investment accounts
+  if (userProfile.lenderProfile && accountType === "investment") {
+    // Base rate on lender's capacity and success rate
+    if (userProfile.lenderProfile.loanSuccessRate >= 90) {
+      rate += 0.5;
+    }
+  }
+
+  return Math.max(0, Math.min(25, rate)); // Ensure rate is between 0% and 25%
 }
